@@ -12,6 +12,7 @@ import {
   applications, comments, conversations, follows, likes, reports, savedOpportunities,
   saves, selections, shortlists, swipes, verifications,
 } from "./data/social";
+import { seedWorkspace } from "./workspace";
 
 type Account = CreatorSeed | BrandSeed | AdminSeed;
 
@@ -345,10 +346,11 @@ async function seedCampaigns() {
   }), { onConflict: "campaign_id,creator_id", ignoreDuplicates: true }), "shortlists");
 
   check(await supabase.from("campaign_creators").upsert(selections.map(([c, cr, status, amount, paidDaysAgo]) => ({
-    campaign_id: seedId(c), creator_id: uid(cr), status, created_at: daysAgo(70),
+    campaign_id: seedId(c), creator_id: uid(cr), status, created_at: daysAgo(70), hired_at: daysAgo(70),
+    completed_at: paidDaysAgo === null ? null : daysAgo(paidDaysAgo), status_changed_at: paidDaysAgo === null ? daysAgo(70) : daysAgo(paidDaysAgo),
     agreed_amount: amount, currency: campaigns.find((x) => x.key === c)!.currency,
     payment_status: paidDaysAgo === null ? "pending" : "paid", paid_at: paidDaysAgo === null ? null : daysAgo(paidDaysAgo),
-  })), { onConflict: "campaign_id,creator_id" }), "selections");
+  })), { onConflict: "campaign_id,creator_id", ignoreDuplicates: true }), "selections");
 
   check(await supabase.from("saved_opportunities").upsert(savedOpportunities.map(([cr, c]) => ({
     creator_id: uid(cr), campaign_id: seedId(c),
@@ -456,6 +458,12 @@ async function main() {
   await seedTrust();
   console.log("• 90-day dashboard history");
   await seedDashboardHistory();
+  console.log("• brand workspace (guidelines, sprint, submissions, escrow, licence records)");
+  const account = (key: string) => accounts.find((a) => a.key === key)!;
+  await seedWorkspace({
+    admin: supabase, url: requireEnv("SUPABASE_URL"), publishableKey: requireEnv("SUPABASE_PUBLISHABLE_KEY"), password: DEMO_PASSWORD,
+    uid, seedId, emailOf: (k) => account(k).email, usernameOf: (k) => account(k).username, log: (m) => console.log(m),
+  });
   check(await supabase.rpc("recompute_stats"), "recompute_stats");
 
   console.log(`\nDone in ${((Date.now() - t0) / 1000).toFixed(1)}s. Demo logins (password: ${DEMO_PASSWORD}):`);

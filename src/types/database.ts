@@ -5,6 +5,18 @@ export type Database = {
   __InternalSupabase: { PostgrestVersion: "13" };
   public: {
     Tables: {
+      ai_job_logs: {
+        Row: { id: number; submission_id: string | null; job: string; status: string; message: string | null; duration_ms: number | null; created_at: string };
+        Insert: { submission_id?: string | null; job: string; status: string; message?: string | null; duration_ms?: number | null; created_at?: string };
+        Update: { submission_id?: string | null; job?: string; status?: string; message?: string | null; duration_ms?: number | null; created_at?: string };
+        Relationships: [];
+      };
+      ai_review_results: {
+        Row: { id: string; submission_id: string; status: string; brand_match_score: number | null; checks: Json; insights: Json; model_name: string | null; error: string | null; attempts: number; created_at: string; updated_at: string };
+        Insert: { id?: string; submission_id: string; status?: string; brand_match_score?: number | null; checks?: Json; insights?: Json; model_name?: string | null; error?: string | null; attempts?: number; created_at?: string; updated_at?: string };
+        Update: { id?: string; submission_id?: string; status?: string; brand_match_score?: number | null; checks?: Json; insights?: Json; model_name?: string | null; error?: string | null; attempts?: number; created_at?: string; updated_at?: string };
+        Relationships: [];
+      };
       ai_tools: {
         Row: { id: number; slug: string; name: string; category: string; vendor: string | null; sort: number };
         Insert: { id?: number; slug: string; name: string; category: string; vendor?: string | null; sort?: number };
@@ -23,6 +35,12 @@ export type Database = {
         Update: { profile_id?: string; company_name?: string; industry?: string | null; company_size?: string | null; description?: string | null; updated_at?: string };
         Relationships: [];
       };
+      brand_guidelines: {
+        Row: { id: string; brand_id: string; name: string; logo_url: string | null; primary_colors: string[]; secondary_colors: string[]; fonts: string[]; tone_of_voice: string | null; visual_style: string | null; dos: string[]; donts: string[]; restricted_content: string | null; version: number; created_at: string; updated_at: string };
+        Insert: { id?: string; brand_id: string; name?: string; logo_url?: string | null; primary_colors?: string[]; secondary_colors?: string[]; fonts?: string[]; tone_of_voice?: string | null; visual_style?: string | null; dos?: string[]; donts?: string[]; restricted_content?: string | null; version?: number; created_at?: string; updated_at?: string };
+        Update: { id?: string; brand_id?: string; name?: string; logo_url?: string | null; primary_colors?: string[]; secondary_colors?: string[]; fonts?: string[]; tone_of_voice?: string | null; visual_style?: string | null; dos?: string[]; donts?: string[]; restricted_content?: string | null; version?: number; created_at?: string; updated_at?: string };
+        Relationships: [];
+      };
       campaign_applications: {
         Row: { id: string; campaign_id: string; creator_id: string; pitch: string; proposed_rate: number | null; status: string; created_at: string; updated_at: string };
         Insert: { id?: string; campaign_id: string; creator_id: string; pitch: string; proposed_rate?: number | null; status?: string; created_at?: string; updated_at?: string };
@@ -30,9 +48,9 @@ export type Database = {
         Relationships: [];
       };
       campaign_creators: {
-        Row: { campaign_id: string; creator_id: string; status: string; created_at: string; agreed_amount: number | null; currency: string; payment_status: string; paid_at: string | null };
-        Insert: { campaign_id: string; creator_id: string; status?: string; created_at?: string; agreed_amount?: number | null; currency?: string; payment_status?: string; paid_at?: string | null };
-        Update: { campaign_id?: string; creator_id?: string; status?: string; created_at?: string; agreed_amount?: number | null; currency?: string; payment_status?: string; paid_at?: string | null };
+        Row: { campaign_id: string; creator_id: string; status: string; created_at: string; agreed_amount: number | null; currency: string; payment_status: string; paid_at: string | null; id: string; hired_at: string | null; started_at: string | null; completed_at: string | null; status_changed_at: string; updated_at: string };
+        Insert: { campaign_id: string; creator_id: string; status?: string; created_at?: string; agreed_amount?: number | null; currency?: string; payment_status?: string; paid_at?: string | null; id?: string; hired_at?: string | null; started_at?: string | null; completed_at?: string | null; status_changed_at?: string; updated_at?: string };
+        Update: { campaign_id?: string; creator_id?: string; status?: string; created_at?: string; agreed_amount?: number | null; currency?: string; payment_status?: string; paid_at?: string | null; id?: string; hired_at?: string | null; started_at?: string | null; completed_at?: string | null; status_changed_at?: string; updated_at?: string };
         Relationships: [];
       };
       campaign_languages: {
@@ -66,9 +84,9 @@ export type Database = {
         Relationships: [];
       };
       campaigns: {
-        Row: { id: string; brand_id: string; title: string; description: string; deliverables: string | null; content_type_id: number | null; style_id: number | null; category_id: number | null; aspect_ratios: string[]; custom_aspect: string | null; target_audience: string | null; budget_min: number | null; budget_max: number | null; currency: string; deadline: string | null; creators_needed: number; usage_rights: string[]; territory: string; usage_duration: string; exclusivity: string; license_type: string; ai_disclosure_required: boolean; ai_assisted: boolean; status: string; published_at: string | null; search: string | null; created_at: string; updated_at: string };
-        Insert: { id?: string; brand_id: string; title: string; description: string; deliverables?: string | null; content_type_id?: number | null; style_id?: number | null; category_id?: number | null; aspect_ratios?: string[]; custom_aspect?: string | null; target_audience?: string | null; budget_min?: number | null; budget_max?: number | null; currency?: string; deadline?: string | null; creators_needed?: number; usage_rights?: string[]; territory?: string; usage_duration?: string; exclusivity?: string; license_type?: string; ai_disclosure_required?: boolean; ai_assisted?: boolean; status?: string; published_at?: string | null; created_at?: string; updated_at?: string };
-        Update: { id?: string; brand_id?: string; title?: string; description?: string; deliverables?: string | null; content_type_id?: number | null; style_id?: number | null; category_id?: number | null; aspect_ratios?: string[]; custom_aspect?: string | null; target_audience?: string | null; budget_min?: number | null; budget_max?: number | null; currency?: string; deadline?: string | null; creators_needed?: number; usage_rights?: string[]; territory?: string; usage_duration?: string; exclusivity?: string; license_type?: string; ai_disclosure_required?: boolean; ai_assisted?: boolean; status?: string; published_at?: string | null; created_at?: string; updated_at?: string };
+        Row: { id: string; brand_id: string; title: string; description: string; deliverables: string | null; content_type_id: number | null; style_id: number | null; category_id: number | null; aspect_ratios: string[]; custom_aspect: string | null; target_audience: string | null; budget_min: number | null; budget_max: number | null; currency: string; deadline: string | null; creators_needed: number; usage_rights: string[]; territory: string; usage_duration: string; exclusivity: string; license_type: string; ai_disclosure_required: boolean; ai_assisted: boolean; status: string; published_at: string | null; search: string | null; created_at: string; updated_at: string; source_idea: string | null; source_url: string | null; source_summary: string | null; ai_brief: Json | null; suggested_tools: string[]; production_notes: Json; ip_terms: Json; guideline_id: string | null; studio_step: number; is_sprint: boolean; sprint_deadline: string | null };
+        Insert: { id?: string; brand_id: string; title: string; description: string; deliverables?: string | null; content_type_id?: number | null; style_id?: number | null; category_id?: number | null; aspect_ratios?: string[]; custom_aspect?: string | null; target_audience?: string | null; budget_min?: number | null; budget_max?: number | null; currency?: string; deadline?: string | null; creators_needed?: number; usage_rights?: string[]; territory?: string; usage_duration?: string; exclusivity?: string; license_type?: string; ai_disclosure_required?: boolean; ai_assisted?: boolean; status?: string; published_at?: string | null; created_at?: string; updated_at?: string; source_idea?: string | null; source_url?: string | null; source_summary?: string | null; ai_brief?: Json | null; suggested_tools?: string[]; production_notes?: Json; ip_terms?: Json; guideline_id?: string | null; studio_step?: number; is_sprint?: boolean; sprint_deadline?: string | null };
+        Update: { id?: string; brand_id?: string; title?: string; description?: string; deliverables?: string | null; content_type_id?: number | null; style_id?: number | null; category_id?: number | null; aspect_ratios?: string[]; custom_aspect?: string | null; target_audience?: string | null; budget_min?: number | null; budget_max?: number | null; currency?: string; deadline?: string | null; creators_needed?: number; usage_rights?: string[]; territory?: string; usage_duration?: string; exclusivity?: string; license_type?: string; ai_disclosure_required?: boolean; ai_assisted?: boolean; status?: string; published_at?: string | null; created_at?: string; updated_at?: string; source_idea?: string | null; source_url?: string | null; source_summary?: string | null; ai_brief?: Json | null; suggested_tools?: string[]; production_notes?: Json; ip_terms?: Json; guideline_id?: string | null; studio_step?: number; is_sprint?: boolean; sprint_deadline?: string | null };
         Relationships: [];
       };
       categories: {
@@ -161,6 +179,12 @@ export type Database = {
         Update: { creator_id?: string; tool_id?: number; proficiency?: string };
         Relationships: [];
       };
+      escrow_payments: {
+        Row: { id: string; campaign_creator_id: string; amount: number; currency: string; platform_fee: number; status: string; provider: string; provider_ref: string | null; funded_at: string | null; released_at: string | null; refunded_at: string | null; disputed_at: string | null; created_at: string; updated_at: string };
+        Insert: { id?: string; campaign_creator_id: string; amount: number; currency: string; platform_fee?: number; status?: string; provider?: string; provider_ref?: string | null; funded_at?: string | null; released_at?: string | null; refunded_at?: string | null; disputed_at?: string | null; created_at?: string; updated_at?: string };
+        Update: { id?: string; campaign_creator_id?: string; amount?: number; currency?: string; platform_fee?: number; status?: string; provider?: string; provider_ref?: string | null; funded_at?: string | null; released_at?: string | null; refunded_at?: string | null; disputed_at?: string | null; created_at?: string; updated_at?: string };
+        Relationships: [];
+      };
       follows: {
         Row: { follower_id: string; following_id: string; created_at: string };
         Insert: { follower_id: string; following_id: string; created_at?: string };
@@ -171,6 +195,12 @@ export type Database = {
         Row: { id: number; user_id: string; target_type: string; target_id: string; action: string; weight: number; context: Json; created_at: string };
         Insert: { user_id: string; target_type: string; target_id: string; action: string; weight?: number; context?: Json; created_at?: string };
         Update: { user_id?: string; target_type?: string; target_id?: string; action?: string; weight?: number; context?: Json; created_at?: string };
+        Relationships: [];
+      };
+      ip_certificates: {
+        Row: { id: string; certificate_id: string; campaign_creator_id: string; campaign_id: string; brand_id: string; creator_id: string; submission_id: string | null; terms: Json; tools_declared: string[]; asset_hashes: Json; generated_at: string; pdf_path: string | null };
+        Insert: { id?: string; certificate_id: string; campaign_creator_id: string; campaign_id: string; brand_id: string; creator_id: string; submission_id?: string | null; terms: Json; tools_declared?: string[]; asset_hashes?: Json; generated_at?: string; pdf_path?: string | null };
+        Update: { id?: string; certificate_id?: string; campaign_creator_id?: string; campaign_id?: string; brand_id?: string; creator_id?: string; submission_id?: string | null; terms?: Json; tools_declared?: string[]; asset_hashes?: Json; generated_at?: string; pdf_path?: string | null };
         Relationships: [];
       };
       languages: {
@@ -186,15 +216,21 @@ export type Database = {
         Relationships: [];
       };
       messages: {
-        Row: { id: string; conversation_id: string; sender_id: string; body: string; created_at: string };
-        Insert: { id?: string; conversation_id: string; sender_id: string; body: string; created_at?: string };
-        Update: { id?: string; conversation_id?: string; sender_id?: string; body?: string; created_at?: string };
+        Row: { id: string; conversation_id: string; sender_id: string; body: string; created_at: string; kind: string };
+        Insert: { id?: string; conversation_id: string; sender_id: string; body: string; created_at?: string; kind?: string };
+        Update: { id?: string; conversation_id?: string; sender_id?: string; body?: string; created_at?: string; kind?: string };
         Relationships: [];
       };
       notifications: {
         Row: { id: string; user_id: string; actor_id: string | null; type: string; entity_type: string | null; entity_id: string | null; data: Json; read_at: string | null; created_at: string };
         Insert: { id?: string; user_id: string; actor_id?: string | null; type: string; entity_type?: string | null; entity_id?: string | null; data?: Json; read_at?: string | null; created_at?: string };
         Update: { id?: string; user_id?: string; actor_id?: string | null; type?: string; entity_type?: string | null; entity_id?: string | null; data?: Json; read_at?: string | null; created_at?: string };
+        Relationships: [];
+      };
+      payment_events: {
+        Row: { id: number; escrow_id: string; actor_id: string | null; event: string; from_status: string | null; to_status: string; amount: number; currency: string; note: string | null; created_at: string };
+        Insert: { escrow_id: string; actor_id?: string | null; event: string; from_status?: string | null; to_status: string; amount: number; currency: string; note?: string | null; created_at?: string };
+        Update: { escrow_id?: string; actor_id?: string | null; event?: string; from_status?: string | null; to_status?: string; amount?: number; currency?: string; note?: string | null; created_at?: string };
         Relationships: [];
       };
       platforms: {
@@ -239,6 +275,18 @@ export type Database = {
         Update: { id?: string; role?: string; username?: string; display_name?: string; avatar_url?: string | null; cover_url?: string | null; headline?: string | null; bio?: string | null; location?: string | null; website?: string | null; links?: Json; is_verified?: boolean; is_suspended?: boolean; onboarded?: boolean; created_at?: string; updated_at?: string };
         Relationships: [];
       };
+      project_events: {
+        Row: { id: string; project_id: string; actor_id: string | null; kind: string; event: string; from_status: string | null; to_status: string | null; note: string | null; data: Json; notify: boolean; created_at: string };
+        Insert: { id?: string; project_id: string; actor_id?: string | null; kind: string; event: string; from_status?: string | null; to_status?: string | null; note?: string | null; data?: Json; notify?: boolean; created_at?: string };
+        Update: { id?: string; project_id?: string; actor_id?: string | null; kind?: string; event?: string; from_status?: string | null; to_status?: string | null; note?: string | null; data?: Json; notify?: boolean; created_at?: string };
+        Relationships: [];
+      };
+      project_reviews: {
+        Row: { id: string; project_id: string; author_id: string; subject_id: string; rating: number; body: string | null; created_at: string };
+        Insert: { id?: string; project_id: string; author_id: string; subject_id: string; rating: number; body?: string | null; created_at?: string };
+        Update: { id?: string; project_id?: string; author_id?: string; subject_id?: string; rating?: number; body?: string | null; created_at?: string };
+        Relationships: [];
+      };
       reports: {
         Row: { id: string; reporter_id: string; target_type: string; target_id: string; reason: string; details: string | null; status: string; resolved_by: string | null; resolved_at: string | null; created_at: string };
         Insert: { id?: string; reporter_id: string; target_type: string; target_id: string; reason: string; details?: string | null; status?: string; resolved_by?: string | null; resolved_at?: string | null; created_at?: string };
@@ -269,6 +317,30 @@ export type Database = {
         Update: { id?: number; slug?: string; name?: string; sort?: number };
         Relationships: [];
       };
+      submission_comments: {
+        Row: { id: string; submission_id: string; author_id: string; file_id: string | null; timestamp_ms: number | null; body: string; created_at: string };
+        Insert: { id?: string; submission_id: string; author_id: string; file_id?: string | null; timestamp_ms?: number | null; body: string; created_at?: string };
+        Update: { id?: string; submission_id?: string; author_id?: string; file_id?: string | null; timestamp_ms?: number | null; body?: string; created_at?: string };
+        Relationships: [];
+      };
+      submission_files: {
+        Row: { id: string; submission_id: string; position: number; kind: string; media_type: string; file_name: string | null; mime_type: string | null; size_bytes: number | null; storage_path: string | null; preview_path: string | null; thumbnail_path: string | null; frame_paths: string[]; preview_kind: string | null; width: number | null; height: number | null; duration_ms: number | null; sha256: string | null; link_url: string | null; palette: string[]; created_at: string };
+        Insert: { id?: string; submission_id: string; position?: number; kind: string; media_type: string; file_name?: string | null; mime_type?: string | null; size_bytes?: number | null; storage_path?: string | null; preview_path?: string | null; thumbnail_path?: string | null; frame_paths?: string[]; preview_kind?: string | null; width?: number | null; height?: number | null; duration_ms?: number | null; sha256?: string | null; link_url?: string | null; palette?: string[]; created_at?: string };
+        Update: { id?: string; submission_id?: string; position?: number; kind?: string; media_type?: string; file_name?: string | null; mime_type?: string | null; size_bytes?: number | null; storage_path?: string | null; preview_path?: string | null; thumbnail_path?: string | null; frame_paths?: string[]; preview_kind?: string | null; width?: number | null; height?: number | null; duration_ms?: number | null; sha256?: string | null; link_url?: string | null; palette?: string[]; created_at?: string };
+        Relationships: [];
+      };
+      submission_reviews: {
+        Row: { id: string; submission_id: string; reviewer_id: string; decision: string; feedback: string | null; created_at: string };
+        Insert: { id?: string; submission_id: string; reviewer_id: string; decision: string; feedback?: string | null; created_at?: string };
+        Update: { id?: string; submission_id?: string; reviewer_id?: string; decision?: string; feedback?: string | null; created_at?: string };
+        Relationships: [];
+      };
+      submissions: {
+        Row: { id: string; project_id: string; campaign_id: string; creator_id: string; version: number; status: string; notes: string | null; tools_used: string[]; workflow_notes: string | null; ai_generated_declared: boolean; commercial_terms_accepted: boolean; submitted_at: string | null; reviewed_at: string | null; created_at: string; updated_at: string };
+        Insert: { id?: string; project_id: string; campaign_id: string; creator_id: string; version: number; status?: string; notes?: string | null; tools_used?: string[]; workflow_notes?: string | null; ai_generated_declared?: boolean; commercial_terms_accepted?: boolean; submitted_at?: string | null; reviewed_at?: string | null; created_at?: string; updated_at?: string };
+        Update: { id?: string; project_id?: string; campaign_id?: string; creator_id?: string; version?: number; status?: string; notes?: string | null; tools_used?: string[]; workflow_notes?: string | null; ai_generated_declared?: boolean; commercial_terms_accepted?: boolean; submitted_at?: string | null; reviewed_at?: string | null; created_at?: string; updated_at?: string };
+        Relationships: [];
+      };
       verifications: {
         Row: { id: string; creator_id: string; type: string; tool_id: number | null; post_id: string | null; experience_id: string | null; title: string; evidence_url: string | null; evidence_notes: string | null; status: string; reviewed_by: string | null; reviewed_at: string | null; review_notes: string | null; created_at: string };
         Insert: { id?: string; creator_id: string; type: string; tool_id?: number | null; post_id?: string | null; experience_id?: string | null; title: string; evidence_url?: string | null; evidence_notes?: string | null; status?: string; reviewed_by?: string | null; reviewed_at?: string | null; review_notes?: string | null; created_at?: string };
@@ -292,6 +364,11 @@ export type Database = {
       admin_stats: { Args: Record<PropertyKey, never>; Returns: Json };
       assert_admin: { Args: Record<PropertyKey, never>; Returns: undefined };
       campaign_card: { Args: { p_id: string }; Returns: Json };
+      can_access_originals: { Args: { p_submission: string }; Returns: boolean };
+      can_read_submission_object: { Args: { p_bucket: string; p_name: string }; Returns: boolean };
+      can_view_submission: { Args: { p_submission: string }; Returns: boolean };
+      cancel_project: { Args: { p_project: string; p_reason: string }; Returns: undefined };
+      create_submission: { Args: { p_project: string }; Returns: string };
       creator_card: { Args: { p_id: string }; Returns: Json };
       creator_search_flags: { Args: { p_query: string; p_skills: number[]; p_categories: number[]; p_tools: number[]; p_content_types: number[]; p_styles: number[]; p_experience: string[]; p_availability: string[]; p_languages: number[]; p_verified_only: boolean }; Returns: { id: string; text_score: number; followers: number; created_at: string; m_query: boolean; m_skills: boolean; m_categories: boolean; m_tools: boolean; m_content_types: boolean; m_styles: boolean; m_experience: boolean; m_availability: boolean; m_languages: boolean; m_verified: boolean; overlap: number }[] };
       creator_seen: { Args: { p_creator: string }; Returns: boolean };
@@ -304,42 +381,73 @@ export type Database = {
       dashboard_posts: { Args: { p_creator: string; p_from: string; p_to: string; p_limit?: number | null }; Returns: { post_id: string; title: string; thumbnail: string; media_type: string; aspect_ratio: string; created_at: string; views: number; avg_watch_ms: number; likes: number; comments: number; saves: number; engagement_rate: number }[] };
       dashboard_series: { Args: { p_creator: string; p_from: string; p_to: string }; Returns: { day: string; views: number; watch_ms: number; likes: number; comments: number; saves: number; new_followers: number; followers: number; visits: number; inquiries: number; earnings: number; engagement_rate_7d: number }[] };
       dashboard_summary: { Args: { p_creator: string; p_from: string; p_to: string }; Returns: Json };
+      dispute_escrow: { Args: { p_project: string; p_reason: string }; Returns: undefined };
+      escrow_transition_allowed: { Args: { p_from: string; p_to: string }; Returns: boolean };
+      fund_escrow: { Args: { p_project: string }; Returns: undefined };
       get_brand_campaigns: { Args: { p_brand?: string | null; p_status?: string | null; p_limit?: number | null; p_offset?: number | null }; Returns: { campaign: Json; total_count: number }[] };
       get_brand_dashboard: { Args: Record<PropertyKey, never>; Returns: Json };
+      get_brand_overview: { Args: Record<PropertyKey, never>; Returns: Json };
+      get_brand_sprints: { Args: Record<PropertyKey, never>; Returns: { sprint: Json }[] };
       get_campaign: { Args: { p_id: string }; Returns: Json };
       get_campaign_applications: { Args: { p_campaign: string }; Returns: { id: string; pitch: string; proposed_rate: number; status: string; created_at: string; creator: Json; shortlisted: boolean; selected: boolean }[] };
       get_campaign_pipeline: { Args: { p_campaign: string }; Returns: { creator: Json; stage: string; note: string; created_at: string; applied: boolean }[] };
       get_comments: { Args: { p_post: string; p_limit?: number | null; p_offset?: number | null }; Returns: { id: string; body: string; created_at: string; author: Json; total_count: number }[] };
       get_creator_dashboard: { Args: Record<PropertyKey, never>; Returns: Json };
       get_creator_posts: { Args: { p_creator: string; p_limit?: number | null; p_offset?: number | null }; Returns: { post: Json; total_count: number }[] };
+      get_deliveries: { Args: { p_filter?: string | null; p_limit?: number | null; p_offset?: number | null }; Returns: { project: Json; total_count: number }[] };
       get_feed: { Args: { p_limit?: number | null; p_offset?: number | null }; Returns: { post: Json; reason: string; score: number }[] };
       get_follow_list: { Args: { p_user: string; p_kind?: string | null; p_limit?: number | null; p_offset?: number | null }; Returns: { profile: Json; is_following: boolean; total_count: number }[] };
+      get_hiring_board: { Args: { p_campaign: string }; Returns: { candidate: Json }[] };
       get_inbox: { Args: { p_other_role?: string | null; p_query?: string | null; p_limit?: number | null; p_offset?: number | null }; Returns: { conversation_id: string; last_message_at: string; last_message_preview: string; last_sender_id: string; unread_count: number; other: Json; total_count: number }[] };
+      get_my_projects: { Args: { p_filter?: string | null; p_limit?: number | null; p_offset?: number | null }; Returns: { project: Json; total_count: number }[] };
       get_notifications: { Args: { p_limit?: number | null; p_offset?: number | null }; Returns: { id: string; type: string; entity_type: string; entity_id: string; data: Json; read_at: string; created_at: string; actor: Json; total_count: number }[] };
       get_opportunities: { Args: { p_tab?: string | null; p_limit?: number | null; p_offset?: number | null }; Returns: { campaign: Json; score: number; reasons: string[]; total_count: number }[] };
       get_or_create_dm: { Args: { p_other: string }; Returns: string };
       get_post: { Args: { p_id: string }; Returns: Json };
       get_profile: { Args: { p_username: string }; Returns: Json };
+      get_project: { Args: { p_project: string }; Returns: Json };
+      get_review_inbox: { Args: { p_campaign?: string | null; p_status?: string | null; p_creator?: string | null; p_limit?: number | null; p_offset?: number | null }; Returns: { item: Json; total_count: number }[] };
       get_saved_posts: { Args: { p_limit?: number | null; p_offset?: number | null }; Returns: { post: Json; total_count: number }[] };
+      get_submission_detail: { Args: { p_submission: string }; Returns: Json };
       get_swipe_deck: { Args: { p_campaign_id?: string | null; p_limit?: number | null; p_include_seen?: boolean | null }; Returns: { creator: Json; score: number; reasons: string[]; campaign_id: string }[] };
       get_unread_counts: { Args: Record<PropertyKey, never>; Returns: Json };
+      hire_creator: { Args: { p_campaign: string; p_creator: string; p_amount: number; p_currency?: string | null }; Returns: string };
+      invite_creator: { Args: { p_campaign: string; p_creator: string; p_note?: string | null }; Returns: boolean };
       is_active_user: { Args: Record<PropertyKey, never>; Returns: boolean };
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
       is_end_user_session: { Args: Record<PropertyKey, never>; Returns: boolean };
+      is_hex_colors: { Args: { p: string[] }; Returns: boolean };
+      is_own_draft_path: { Args: { p_name: string }; Returns: boolean };
       is_participant: { Args: { p_conversation: string }; Returns: boolean };
       mark_conversation_read: { Args: { p_conversation: string }; Returns: undefined };
       mini_profile: { Args: { p_id: string }; Returns: Json };
+      mini_profile_json: { Args: { p_id: string }; Returns: Json };
       notify: { Args: { p_user: string; p_actor: string; p_type: string; p_entity_type: string; p_entity_id: string; p_data?: Json | null }; Returns: undefined };
       owns_campaign: { Args: { p_campaign: string }; Returns: boolean };
       post_card: { Args: { p_id: string }; Returns: Json };
+      project_role: { Args: { p_project: string }; Returns: string };
+      project_summary: { Args: { p_project: string }; Returns: Json };
+      project_transition_allowed: { Args: { p_from: string; p_to: string }; Returns: boolean };
       public_stats: { Args: Record<PropertyKey, never>; Returns: Json };
+      publish_campaign: { Args: { p_campaign: string }; Returns: number };
       rank_creators_for_campaign: { Args: { p_campaign_id: string; p_limit?: number | null; p_offset?: number | null; p_exclude_swiped?: boolean | null; p_only?: string[] | null }; Returns: { creator: Json; score: number; breakdown: Json; reasons: string[]; total_count: number }[] };
       recompute_stats: { Args: Record<PropertyKey, never>; Returns: undefined };
       record_post_view: { Args: { p_post: string; p_watch_ms?: number | null }; Returns: undefined };
       record_profile_visit: { Args: { p_creator: string }; Returns: undefined };
+      refund_escrow: { Args: { p_project: string; p_reason: string }; Returns: undefined };
+      release_escrow: { Args: { p_project: string }; Returns: string };
+      review_submission: { Args: { p_submission: string; p_decision: string; p_feedback?: string | null }; Returns: undefined };
       search_creators: { Args: { p_query?: string | null; p_skills?: number[] | null; p_categories?: number[] | null; p_tools?: number[] | null; p_content_types?: number[] | null; p_styles?: number[] | null; p_experience?: string[] | null; p_availability?: string[] | null; p_languages?: number[] | null; p_verified_only?: boolean | null; p_sort?: string | null; p_match?: string | null; p_exclude?: string[] | null; p_limit?: number | null; p_offset?: number | null }; Returns: { creator: Json; score: number; matched_groups: number; total_count: number }[] };
       search_creators_diagnostics: { Args: { p_query?: string | null; p_skills?: number[] | null; p_categories?: number[] | null; p_tools?: number[] | null; p_content_types?: number[] | null; p_styles?: number[] | null; p_experience?: string[] | null; p_availability?: string[] | null; p_languages?: number[] | null; p_verified_only?: boolean | null }; Returns: { filter_group: string; results_without: number }[] };
       seed_dashboard_history: { Args: { p_creator: string; p_demo_ids: string[]; p_base: number; p_spike_days_ago: number; p_dip_from: number; p_dip_to: number }; Returns: undefined };
+      short_texts: { Args: { p: string[]; p_max: number }; Returns: boolean };
+      sprint_closed: { Args: { p_campaign: string }; Returns: boolean };
+      start_project: { Args: { p_project: string }; Returns: undefined };
+      submission_json: { Args: { p_submission: string }; Returns: Json };
+      submit_submission: { Args: { p_submission: string }; Returns: undefined };
+      unhire_creator: { Args: { p_campaign: string; p_creator: string }; Returns: undefined };
+      uuid_or_null: { Args: { p: string }; Returns: string };
+      verify_certificate: { Args: { p_code: string }; Returns: Json };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };

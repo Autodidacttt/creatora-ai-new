@@ -278,9 +278,11 @@ async function main() {
       check("a real like changes the creator's dashboard", after.likes === before.likes + 1, `${before.likes} → ${after.likes}`);
       await fresh.c.from("likes").delete().eq("user_id", fresh.id).eq("post_id", mayaPost.data!.id);
 
-      const hire = await brand.c.from("campaign_creators").insert({ campaign_id: draft.data!.id, creator_id: fresh.id, agreed_amount: 750, currency: "USD", payment_status: "paid", paid_at: new Date().toISOString() });
+      const direct = await brand.c.from("campaign_creators").insert({ campaign_id: draft.data!.id, creator_id: fresh.id, agreed_amount: 750, currency: "USD", payment_status: "paid", paid_at: new Date().toISOString() });
+      check("hires can't be written directly (only through the workflow RPCs)", !!direct.error);
+      const hire = await brand.c.rpc("hire_creator", { p_campaign: draft.data!.id, p_creator: fresh.id, p_amount: 750 });
       const career = (await fresh.c.rpc("dashboard_career", { p_creator: fresh.id, ...range })).data as { hired: number; earned_in_range: number } | null;
-      check("a real hire + payment changes the career and earnings figures", !hire.error && career?.hired === 1 && career?.earned_in_range === 750, hire.error?.message);
+      check("a real hire changes the career figures (earnings only move on released payment)", !hire.error && career?.hired === 1 && career?.earned_in_range === 0, hire.error?.message);
     } finally {
       await adminApi.auth.admin.deleteUser(brandUser.data.user!.id);
     }

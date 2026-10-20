@@ -24,17 +24,17 @@ export async function getConversationPeer(db: DB, conversationId: string): Promi
 
 /** Newest-first page of messages older than `before`. */
 export async function getMessages(db: DB, conversationId: string, before?: string, size = 40): Promise<{ items: Message[]; hasMore: boolean }> {
-  let q = db.from("messages").select("id, conversation_id, sender_id, body, created_at")
+  let q = db.from("messages").select("id, conversation_id, sender_id, body, kind, created_at")
     .eq("conversation_id", conversationId).order("created_at", { ascending: false }).limit(size);
   if (before) q = q.lt("created_at", before);
   const rows = unwrap(await q);
-  return { items: rows.reverse(), hasMore: rows.length === size };
+  return { items: rows.reverse() as Message[], hasMore: rows.length === size };
 }
 
 export async function sendMessage(db: DB, conversationId: string, body: string): Promise<Message> {
   const senderId = await requireUserId(db);
   return unwrap(await db.from("messages").insert({ conversation_id: conversationId, sender_id: senderId, body })
-    .select("id, conversation_id, sender_id, body, created_at").single());
+    .select("id, conversation_id, sender_id, body, kind, created_at").single());
 }
 
 export async function markConversationRead(db: DB, conversationId: string) {

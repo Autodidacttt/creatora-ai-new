@@ -133,6 +133,21 @@ export interface CampaignCard {
   my_shortlisted: boolean;
   my_selected: boolean;
   saved: boolean;
+  /** The caller's own project on this brief (creators), if any */
+  my_project?: { id: string; status: string } | null;
+  is_sprint?: boolean;
+  sprint_deadline?: string | null;
+  sprint_closed?: boolean;
+  guideline_id?: string | null;
+  suggested_tools?: string[];
+  production_notes?: { camera?: string; lighting?: string; style?: string; format?: string };
+  ip_terms?: { notes?: string };
+  ai_brief?: Record<string, unknown> | null;
+  /** Studio inputs — only returned to the owning brand */
+  source_idea?: string | null;
+  source_url?: string | null;
+  source_summary?: string | null;
+  studio_step?: number;
 }
 
 export interface ScoreBreakdown {
@@ -228,15 +243,18 @@ export interface Message {
   sender_id: string;
   body: string;
   created_at: string;
+  /** "system" = automatic project/payment update posted by the platform */
+  kind?: "user" | "system";
   pending?: boolean;
 }
 
 export interface NotificationItem {
   id: string;
-  type: "follow" | "like" | "comment" | "application" | "shortlisted" | "selected" | "message" | "verification";
+  type: "follow" | "like" | "comment" | "application" | "shortlisted" | "selected" | "message" | "verification"
+    | "project" | "payment" | "opportunity";
   entity_type: string | null;
   entity_id: string | null;
-  data: Record<string, string | number | undefined>;
+  data: Record<string, string | number | boolean | null | undefined | string[]>;
   read_at: string | null;
   created_at: string;
   actor: MiniProfile | null;

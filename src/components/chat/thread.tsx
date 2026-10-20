@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Loader2, Send } from "lucide-react";
+import { ArrowLeft, Loader2, Send, Workflow } from "lucide-react";
 import { toast } from "sonner";
 import type { Message } from "@/types/app";
 import { useDb, useMe } from "@/features/session";
@@ -152,6 +152,19 @@ export function Thread({ conversationId }: { conversationId: string }) {
         {messages.map((m, i) => {
           const mine = m.sender_id === me.id;
           const newDay = i === 0 || dayLabel(messages[i - 1].created_at) !== dayLabel(m.created_at);
+          if (m.kind === "system") {
+            return (
+              <div key={m.id}>
+                {newDay && <p className="py-3 text-center text-[11px] font-medium uppercase tracking-wider text-ink-3">{dayLabel(m.created_at)}</p>}
+                <div className="flex justify-center py-1.5">
+                  <p className="flex max-w-[88%] items-start gap-2 rounded-2xl border border-line bg-card/60 px-3.5 py-2 text-xs text-ink-2">
+                    <Workflow className="mt-0.5 size-3.5 shrink-0 text-amber-2" aria-hidden />
+                    <span><span className="sr-only">Project update: </span>{m.body}</span>
+                  </p>
+                </div>
+              </div>
+            );
+          }
           return (
             <div key={m.id}>
               {newDay && <p className="py-3 text-center text-[11px] font-medium uppercase tracking-wider text-ink-3">{dayLabel(m.created_at)}</p>}

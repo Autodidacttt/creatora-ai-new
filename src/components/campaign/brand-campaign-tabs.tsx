@@ -18,13 +18,16 @@ import { ContactButton } from "@/components/posts/actions";
 import { CreatorResultCard } from "@/components/discovery/creator-card";
 import { errorMessage, money, timeAgo } from "@/lib/utils";
 import { ScoreBreakdown, ScoreRing } from "./score-breakdown";
+import { HireDialog } from "@/components/workspace/hire-dialog";
 
-function usePipelineActions(campaignId: string) {
+function usePipelineActions(campaign: CampaignCard) {
+  const campaignId = campaign.id;
   const db = useDb();
   const qc = useQueryClient();
   const [busy, setBusy] = useState<string | null>(null);
+  const [hiring, setHiring] = useState<{ creator: CreatorCard; amount: number | null } | null>(null);
   const refresh = () => {
-    ["applications", "pipeline", "campaign", "matches"].forEach((k) => qc.invalidateQueries({ queryKey: [k, campaignId] }));
+    ["applications", "pipeline", "campaign", "matches", "hiring", "deliveries"].forEach((k) => qc.invalidateQueries({ queryKey: [k, campaignId] }));
   };
   const run = async (key: string, fn: () => Promise<void>, ok: string) => {
     setBusy(key);
@@ -42,10 +45,16 @@ function usePipelineActions(campaignId: string) {
     busy,
     shortlist: (creator: CreatorCard, on: boolean) =>
       run(`s-${creator.id}`, () => setShortlisted(db, campaignId, creator.id, on), on ? `${creator.display_name} shortlisted` : "Removed from shortlist"),
-    select: (creator: CreatorCard, on: boolean) =>
-      run(`x-${creator.id}`, () => setSelected(db, campaignId, creator.id, on), on ? `${creator.display_name} selected 🎉` : "Selection removed"),
+    /** Hiring opens the hire dialog (agreed amount + escrow); undoing a hire only works before any work or payment. */
+    select: (creator: CreatorCard, on: boolean, suggested?: number | null) =>
+      on ? setHiring({ creator, amount: suggested ?? campaign.budget_min })
+        : run(`x-${creator.id}`, () => setSelected(db, campaignId, creator.id, false), "Hire undone"),
     reject: (appId: string, on: boolean) =>
       run(`r-${appId}`, () => setApplicationStatus(db, appId, on ? "rejected" : "pending"), on ? "Application declined" : "Application restored"),
+    dialog: hiring ? (
+      <HireDialog open onOpenChange={(o) => !o && setHiring(null)} campaignId={campaignId} creator={hiring.creator}
+        suggestedAmount={hiring.amount} currency={campaign.currency} onHired={refresh} />
+    ) : null,
   };
 }
 
@@ -54,7 +63,7 @@ function usePipelineActions(campaignId: string) {
 // ---------------------------------------------------------------------------
 export function MatchesTab({ campaign }: { campaign: CampaignCard }) {
   const db = useDb();
-  const actions = usePipelineActions(campaign.id);
+  const actions = usePipelineActions(campaign);
   const pipeline = useQuery({ queryKey: ["pipeline", campaign.id], queryFn: () => getPipeline(db, campaign.id) });
   const q = useInfiniteQuery({
     queryKey: ["matches", campaign.id],
@@ -102,7 +111,7 @@ export function MatchesTab({ campaign }: { campaign: CampaignCard }) {
                       {shortlisted ? <StarOff /> : <Star />} {shortlisted ? "Shortlisted" : "Shortlist"}
                     </Button>
                     <Button size="sm" variant={selected ? "dark" : "secondary"} loading={actions.busy === `x-${m.creator.id}`} onClick={() => actions.select(m.creator, !selected)}>
-                      <UserCheck /> {selected ? "Selected" : "Select"}
+                      <UserCheck /> {selected ? "Hired" : "Hire"}
                     </Button>
                     <ContactButton profileId={m.creator.id} size="sm" label="Contact" />
                   </div>
@@ -113,6 +122,7 @@ export function MatchesTab({ campaign }: { campaign: CampaignCard }) {
         })}
       </div>
       {q.hasNextPage && <InfiniteSentinel onVisible={() => !q.isFetchingNextPage && q.fetchNextPage()} loading={q.isFetchingNextPage} />}
+      {actions.dialog}
     </div>
   );
 }
@@ -122,7 +132,7 @@ export function MatchesTab({ campaign }: { campaign: CampaignCard }) {
 // ---------------------------------------------------------------------------
 export function ApplicationsTab({ campaign }: { campaign: CampaignCard }) {
   const db = useDb();
-  const actions = usePipelineActions(campaign.id);
+  const actions = usePipelineActions(campaign);
   const apps = useQuery({ queryKey: ["applications", campaign.id], queryFn: () => getApplications(db, campaign.id) });
   const ids = apps.data?.map((a) => a.creator.id) ?? [];
   const scores = useQuery({
@@ -142,6 +152,8 @@ export function ApplicationsTab({ campaign }: { campaign: CampaignCard }) {
   const sorted = [...apps.data].sort((a, b) => (scores.data?.get(b.creator.id)?.score ?? 0) - (scores.data?.get(a.creator.id)?.score ?? 0));
 
   return (
+    <>
+    {actions.dialog}
     <ul className="space-y-3">
       {sorted.map((a) => {
         const sc = scores.data?.get(a.creator.id);
@@ -164,14 +176,14 @@ export function ApplicationsTab({ campaign }: { campaign: CampaignCard }) {
             )}
             <div className="mt-4 flex flex-wrap items-center gap-2">
               {a.status === "rejected" && <Chip tone="danger">Declined</Chip>}
-              {a.selected && <Chip tone="dark" icon={<Check />}>Selected</Chip>}
+              {a.selected && <Chip tone="dark" icon={<Check />}>Hired</Chip>}
               {a.shortlisted && !a.selected && <Chip tone="amber" icon={<Star />}>Shortlisted</Chip>}
               <span className="flex-1" />
               <Button size="sm" variant={a.shortlisted ? "secondary" : "primary"} loading={actions.busy === `s-${a.creator.id}`} onClick={() => actions.shortlist(a.creator, !a.shortlisted)}>
                 {a.shortlisted ? <StarOff /> : <Star />} {a.shortlisted ? "Unshortlist" : "Shortlist"}
               </Button>
-              <Button size="sm" variant={a.selected ? "dark" : "secondary"} loading={actions.busy === `x-${a.creator.id}`} onClick={() => actions.select(a.creator, !a.selected)}>
-                <UserCheck /> {a.selected ? "Selected" : "Select"}
+              <Button size="sm" variant={a.selected ? "dark" : "secondary"} loading={actions.busy === `x-${a.creator.id}`} onClick={() => actions.select(a.creator, !a.selected, a.proposed_rate)}>
+                <UserCheck /> {a.selected ? "Hired" : "Hire"}
               </Button>
               <ContactButton profileId={a.creator.id} size="sm" label="Message" />
               <Button size="sm" variant="ghost" loading={actions.busy === `r-${a.id}`} onClick={() => actions.reject(a.id, a.status !== "rejected")}>
@@ -182,6 +194,7 @@ export function ApplicationsTab({ campaign }: { campaign: CampaignCard }) {
         );
       })}
     </ul>
+    </>
   );
 }
 
@@ -190,7 +203,7 @@ export function ApplicationsTab({ campaign }: { campaign: CampaignCard }) {
 // ---------------------------------------------------------------------------
 export function PipelineTab({ campaign }: { campaign: CampaignCard }) {
   const db = useDb();
-  const actions = usePipelineActions(campaign.id);
+  const actions = usePipelineActions(campaign);
   const q = useQuery({ queryKey: ["pipeline", campaign.id], queryFn: () => getPipeline(db, campaign.id) });
   if (q.isPending) return <Skeleton className="h-60 rounded-[2rem]" />;
   if (q.isError) return <ErrorState error={q.error} onRetry={() => q.refetch()} />;
@@ -214,7 +227,7 @@ export function PipelineTab({ campaign }: { campaign: CampaignCard }) {
           </Link>
           <div className="flex gap-1.5">
             {kind === "shortlisted" && (
-              <Button size="sm" variant="primary" loading={actions.busy === `x-${p.creator.id}`} onClick={() => actions.select(p.creator, true)}><UserCheck /> Select</Button>
+              <Button size="sm" variant="primary" loading={actions.busy === `x-${p.creator.id}`} onClick={() => actions.select(p.creator, true)}><UserCheck /> Hire</Button>
             )}
             <ContactButton profileId={p.creator.id} size="sm" label="Message" />
             <Button size="icon-sm" variant="ghost" aria-label="Remove"
@@ -227,7 +240,8 @@ export function PipelineTab({ campaign }: { campaign: CampaignCard }) {
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       {column("Shortlisted", shortlisted, "shortlisted")}
-      {column("Selected", selected, "selected")}
+      {column("Hired", selected, "selected")}
+      {actions.dialog}
     </div>
   );
 }

@@ -17,8 +17,9 @@ import { StatBlob } from "@/components/ui/stat-blob";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { errorMessage } from "@/lib/utils";
+import { MyProjects } from "@/components/workspace/my-projects";
 
-type Tab = "for_you" | "saved" | "applied";
+type Tab = "for_you" | "saved" | "applied" | "projects";
 
 function OpportunityActions({ o, onHidden }: { o: Opportunity; onHidden: () => void }) {
   const db = useDb();
@@ -72,10 +73,10 @@ export default function OpportunitiesPage() {
   const dash = useQuery({ queryKey: ["dashboard", "creator"], queryFn: () => getDashboard(db, "creator"), enabled: me.role === "creator" });
   const q = useInfiniteQuery({
     queryKey: ["opportunities", tab],
-    queryFn: ({ pageParam }) => getOpportunities(db, tab, pageParam),
+    queryFn: ({ pageParam }) => getOpportunities(db, tab === "projects" ? "for_you" : tab, pageParam),
     initialPageParam: 0,
     getNextPageParam: (last) => last.nextPage,
-    enabled: me.role !== "brand",
+    enabled: me.role !== "brand" && tab !== "projects",
   });
   const items = (q.data?.pages.flatMap((p) => p.items) ?? []).filter((o) => !hidden.includes(o.campaign.id));
 
@@ -91,17 +92,18 @@ export default function OpportunitiesPage() {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatBlob value={dash.data.applications ?? 0} label="Applications sent" href="/opportunities?tab=applied" accent />
           <StatBlob value={dash.data.shortlisted ?? 0} label="Shortlisted" href="/opportunities?tab=applied" />
-          <StatBlob value={dash.data.selected ?? 0} label="Selected" href="/opportunities?tab=applied" />
-          <StatBlob value={dash.data.brand_interest ?? 0} label="Brands interested" />
+          <StatBlob value={dash.data.selected ?? 0} label="Hired" href="/opportunities?tab=projects" />
+          <StatBlob value={dash.data.active_projects ?? 0} label={dash.data.revisions_requested ? `Active projects · ${dash.data.revisions_requested} need changes` : "Active projects"} href="/opportunities?tab=projects" />
         </div>
       )}
 
       <SegmentedTabs
         value={tab}
         onChange={(t) => router.replace(t === "for_you" ? "/opportunities" : `/opportunities?tab=${t}`, { scroll: false })}
-        items={[{ value: "for_you", label: "For you" }, { value: "saved", label: "Saved" }, { value: "applied", label: "Applied" }]}
+        items={[{ value: "for_you", label: "For you" }, { value: "saved", label: "Saved" }, { value: "applied", label: "Applied" }, { value: "projects", label: "My projects", count: dash.data?.active_projects || undefined }]}
       />
 
+      {tab === "projects" ? <MyProjects /> : (<>
       {q.isPending && <div className="grid gap-4 md:grid-cols-2">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-80 rounded-[2rem]" />)}</div>}
       {q.isError && <ErrorState error={q.error} onRetry={() => q.refetch()} />}
       {q.isSuccess && items.length === 0 && (
@@ -123,6 +125,7 @@ export default function OpportunitiesPage() {
         </AnimatePresence>
       </div>
       {q.hasNextPage && <InfiniteSentinel onVisible={() => !q.isFetchingNextPage && q.fetchNextPage()} loading={q.isFetchingNextPage} />}
+      </>)}
     </div>
   );
 }

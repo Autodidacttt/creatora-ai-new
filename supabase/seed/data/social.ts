@@ -66,11 +66,12 @@ export const shortlists: [campaign: string, creator: string, note: string][] = [
   ["tidewell-summer", "lena", "Music video experience fits the anthem concept."],
 ];
 
-// [campaign, creator, status, agreed amount (campaign currency), paid N days ago | null = payment pending]
-export const selections: [campaign: string, creator: string, status: "selected" | "completed", amount: number, paidDaysAgo: number | null][] = [
+// Hires: [campaign, creator, status, agreed amount (campaign currency), paid N days ago | null = payment pending]
+// Only inserted when missing — later steps move these projects through the real workflow (see seed/workspace.ts).
+export const selections: [campaign: string, creator: string, status: "hired" | "completed", amount: number, paidDaysAgo: number | null][] = [
   ["atelier-holiday", "sofia", "completed", 3800, 41],
   ["atelier-holiday", "diego", "completed", 1600, 38],
-  ["orbitone-arc", "kenji", "selected", 12500, null],
+  ["orbitone-arc", "kenji", "hired", 12500, null],
 ];
 
 export const savedOpportunities: [creator: string, campaign: string][] = [

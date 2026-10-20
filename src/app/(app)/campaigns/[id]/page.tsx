@@ -4,10 +4,12 @@ import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, CheckCircle2, Layers, MoreHorizontal, Pencil, RotateCcw, Rocket, Sparkles, Trash2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, FileSearch, Layers, MoreHorizontal, Pencil, RotateCcw, Rocket, Sparkles, Trash2, UserPlus, Zap } from "lucide-react";
+import { Countdown } from "@/components/workspace/countdown";
 import { toast } from "sonner";
 import { useDb, useMe } from "@/features/session";
 import { deleteCampaign, getCampaign, setCampaignStatus } from "@/services/campaigns";
+import { publishCampaign } from "@/services/workspace";
 import { BriefDetails } from "@/components/campaign/brief-details";
 import { ApplicationsTab, MatchesTab, PipelineTab } from "@/components/campaign/brand-campaign-tabs";
 import { ApplyPanel } from "@/components/campaign/apply-panel";
@@ -42,6 +44,19 @@ export default function CampaignPage() {
   const c = q.data;
   const isOwner = c.brand_id === me.id;
 
+  async function publish() {
+    setBusy(true);
+    try {
+      const n = await publishCampaign(db, c.id);
+      toast.success(n ? "Brief published — " + n + " matching creator" + (n === 1 ? "" : "s") + " notified" : "Brief published");
+      qc.invalidateQueries({ queryKey: ["campaign", id] });
+      qc.invalidateQueries({ queryKey: ["campaigns"] });
+    } catch (e) {
+      toast.error(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  }
   async function changeStatus(status: "active" | "completed" | "draft") {
     setBusy(true);
     try {
@@ -74,7 +89,8 @@ export default function CampaignPage() {
         <div className="min-w-0 flex-1">
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <StatusChip status={c.status} />
-            <DeadlineChip deadline={c.deadline} />
+            {c.is_sprint && c.sprint_deadline ? <Countdown to={c.sprint_deadline} /> : <DeadlineChip deadline={c.deadline} />}
+            {c.is_sprint && <Chip tone="dark" icon={<Zap />}>48h sprint</Chip>}
             {c.ai_assisted && <Chip tone="amber" icon={<Sparkles />}>AI-structured brief</Chip>}
           </div>
           <h1 className="display text-2xl sm:text-3xl">{c.title}</h1>
@@ -96,7 +112,7 @@ export default function CampaignPage() {
               <strong className="text-ink">{c.stats.applications}</strong> applications · <strong className="text-ink">{c.stats.shortlisted}</strong> shortlisted · <strong className="text-ink">{c.stats.selected}</strong> selected
             </span>
           )}
-          {c.status === "draft" && <Button variant="primary" loading={busy} onClick={() => changeStatus("active")}><Rocket /> Publish</Button>}
+          {c.status === "draft" && <Button variant="primary" loading={busy} onClick={publish}><Rocket /> Publish</Button>}
           {c.status === "active" && (
             <>
               <Link href={`/swipe?campaign=${c.id}`} className={buttonVariants({ variant: "dark" })}><Layers /> Swipe matches</Link>
@@ -104,6 +120,12 @@ export default function CampaignPage() {
             </>
           )}
           {c.status === "completed" && <Button loading={busy} onClick={() => changeStatus("active")}><RotateCcw /> Reopen</Button>}
+          {c.status !== "draft" && (
+            <>
+              <Link href={`/brand/campaigns/review?campaign=${c.id}`} className={buttonVariants({ variant: "secondary" })}><FileSearch /> Review work</Link>
+              <Link href={`/brand/campaigns/hiring?tab=hiring&campaign=${c.id}`} className={buttonVariants({ variant: "secondary" })}><UserPlus /> Hiring</Link>
+            </>
+          )}
           <Menu>
             <MenuTrigger asChild><Button size="icon" variant="ghost" aria-label="More"><MoreHorizontal /></Button></MenuTrigger>
             <MenuContent>

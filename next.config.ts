@@ -16,6 +16,12 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "img.youtube.com" },
     ],
   },
+  // Media processing for submissions: ffmpeg is a native binary (loaded with plain require), and the watermark
+  // font + binary must ship with the functions that use them.
+  serverExternalPackages: ["ffmpeg-static"],
+  outputFileTracingIncludes: {
+    "/api/submissions/**": ["./node_modules/ffmpeg-static/ffmpeg*", "./src/assets/fonts/**"],
+  },
   turbopack: {
     rules: {
       "*.css": {

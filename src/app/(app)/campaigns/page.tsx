@@ -6,14 +6,14 @@ import { useQuery } from "@tanstack/react-query";
 import { Megaphone, Plus } from "lucide-react";
 import type { CampaignStatus } from "@/types/app";
 import { useDb, useMe } from "@/features/session";
-import { getBrandCampaigns, getDashboard } from "@/services/campaigns";
+import { getBrandCampaigns } from "@/services/campaigns";
 import { CampaignCard } from "@/components/campaign/campaign-card";
 import { SegmentedTabs } from "@/components/ui/tabs";
 import { EmptyState, ErrorState, Skeleton } from "@/components/ui/states";
-import { StatBlob } from "@/components/ui/stat-blob";
 import { PillCTA } from "@/components/ui/pill-cta";
 import { buttonVariants } from "@/components/ui/button";
 import { useEffect } from "react";
+import { BrandDashboard } from "@/components/workspace/brand-dashboard";
 
 type Tab = "all" | CampaignStatus;
 
@@ -34,7 +34,6 @@ export default function CampaignsPage() {
     enabled: me.role !== "creator",
   });
   const all = useQuery({ queryKey: ["campaigns", "all"], queryFn: () => getBrandCampaigns(db, {}), enabled: me.role !== "creator" });
-  const dash = useQuery({ queryKey: ["dashboard", "brand"], queryFn: () => getDashboard(db, "brand"), enabled: me.role === "brand" });
   const count = (s: CampaignStatus) => all.data ? all.data.items.filter((c) => c.status === s).length : undefined;
 
   return (
@@ -42,19 +41,16 @@ export default function CampaignsPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="eyebrow">Campaigns</p>
-          <h1 className="display text-3xl sm:text-4xl">Your briefs</h1>
+          <h1 className="display text-3xl sm:text-4xl">{me.role === "brand" ? "Brand dashboard" : "Your briefs"}</h1>
         </div>
-        <PillCTA href="/campaigns/new">New brief</PillCTA>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link href="/campaigns/new" className={buttonVariants({ variant: "ghost", size: "sm" })}>Quick brief form</Link>
+          <PillCTA href="/brand/campaigns/studio">Create campaign</PillCTA>
+        </div>
       </div>
 
-      {dash.data && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatBlob value={dash.data.active ?? 0} label="Active briefs" accent />
-          <StatBlob value={dash.data.applications ?? 0} label="Applications" />
-          <StatBlob value={dash.data.shortlisted ?? 0} label="Shortlisted" />
-          <StatBlob value={dash.data.selected ?? 0} label="Selected" />
-        </div>
-      )}
+      {me.role === "brand" && <BrandDashboard />}
+      {me.role === "brand" && <h2 className="display pt-2 text-xl">Your briefs</h2>}
 
       <SegmentedTabs
         value={tab}
@@ -72,7 +68,7 @@ export default function CampaignsPage() {
       {list.data?.items.length === 0 && (
         <EmptyState icon={<Megaphone />} title={tab === "all" ? "No briefs yet" : `No ${tab} briefs`}
           description="Describe your idea in one sentence and the AI brief builder will structure it — formats, tools, rights and all."
-          action={<Link href="/campaigns/new" className={buttonVariants({ variant: "primary" })}><Plus /> Create a brief</Link>} />
+          action={<Link href="/brand/campaigns/studio" className={buttonVariants({ variant: "primary" })}><Plus /> Create a campaign</Link>} />
       )}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {list.data?.items.map((c) => <CampaignCard key={c.id} campaign={c} showBrand={false} showStats />)}

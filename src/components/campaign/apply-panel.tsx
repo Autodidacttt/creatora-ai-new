@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bookmark, BookmarkCheck, Check, EyeOff, Send, Star, Undo2 } from "lucide-react";
+import Link from "next/link";
+import { Bookmark, BookmarkCheck, Check, EyeOff, FolderKanban, Send, Star, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import type { CampaignCard } from "@/types/app";
@@ -12,7 +13,8 @@ import { scoreCreators } from "@/services/discovery";
 import { applicationSchema } from "@/lib/validation/schemas";
 import { Dialog } from "@/components/ui/overlay";
 import { Field, Input, Textarea } from "@/components/ui/field";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Countdown } from "@/components/workspace/countdown";
 import { PillCTA } from "@/components/ui/pill-cta";
 import { Chip } from "@/components/ui/chip";
 import { GlassPanel } from "@/components/ui/glass";
@@ -38,7 +40,7 @@ export function ApplyPanel({ campaign, onChange }: { campaign: CampaignCard; onC
     queryFn: async () => (await scoreCreators(db, campaign.id, [me.id])).get(me.id) ?? null,
   });
   const app = campaign.my_application;
-  const canApply = campaign.status === "active";
+  const canApply = campaign.status === "active" && !campaign.sprint_closed;
 
   const refresh = () => { qc.invalidateQueries({ queryKey: ["opportunities"] }); onChange(); };
 
@@ -85,8 +87,20 @@ export function ApplyPanel({ campaign, onChange }: { campaign: CampaignCard; onC
         </>
       )}
 
+      {campaign.is_sprint && campaign.sprint_deadline && (
+        <div className="space-y-1.5 rounded-2xl bg-amber-soft/70 p-3 text-xs">
+          <div className="flex items-center justify-between gap-2"><strong className="text-sm">48-hour sprint</strong><Countdown to={campaign.sprint_deadline} /></div>
+          <p className="text-ink-2">Apply, then submit spec work from your project page before the deadline. Late submissions are rejected automatically.</p>
+        </div>
+      )}
+      {campaign.my_project && (
+        <Link href={`/opportunities/projects/${campaign.my_project.id}`} className={buttonVariants({ variant: "dark", className: "w-full" })}>
+          <FolderKanban /> Open my project
+        </Link>
+      )}
+
       <div className="space-y-2 border-t border-line pt-4">
-        {campaign.my_selected && <Chip tone="dark" icon={<Check />}>You&apos;re selected for this brief</Chip>}
+        {campaign.my_selected && <Chip tone="dark" icon={<Check />}>You&apos;re hired for this brief</Chip>}
         {campaign.my_shortlisted && !campaign.my_selected && <Chip tone="amber" icon={<Star />}>You&apos;re shortlisted</Chip>}
         {app && (
           <p className="text-sm">

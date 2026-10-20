@@ -1,6 +1,6 @@
 import type { CampaignCard, CampaignStatus, CreatorCard } from "@/types/app";
 import type { CampaignInput } from "@/lib/validation/schemas";
-import { as, type DB, requireUserId, unwrap, unwrapMaybe } from "./_db";
+import { as, type DB, requireUserId, ServiceError, unwrap, unwrapMaybe } from "./_db";
 import { toPage, type Page } from "./posts";
 import { recordInteraction } from "./social";
 
@@ -126,15 +126,10 @@ export async function setShortlisted(db: DB, campaignId: string, creatorId: stri
   }
 }
 
+/** Hiring goes through hire_creator (amount + escrow, see services/workspace); this only undoes an untouched hire. */
 export async function setSelected(db: DB, campaignId: string, creatorId: string, on: boolean) {
-  if (on) {
-    unwrap(await db.from("campaign_creators").upsert(
-      { campaign_id: campaignId, creator_id: creatorId, status: "selected" },
-      { onConflict: "campaign_id,creator_id", ignoreDuplicates: true },
-    ));
-  } else {
-    unwrap(await db.from("campaign_creators").delete().eq("campaign_id", campaignId).eq("creator_id", creatorId));
-  }
+  if (on) throw new ServiceError("Use Hire to set the agreed amount.");
+  unwrap(await db.rpc("unhire_creator", { p_campaign: campaignId, p_creator: creatorId }));
 }
 
 export async function setApplicationStatus(db: DB, applicationId: string, status: "pending" | "rejected" | "withdrawn") {

@@ -18,7 +18,7 @@ export function navFor(role: Role, username: string): NavItem[] {
     return [
       home,
       { label: "Discover", href: "/discover", icon: Compass, match: ["/discover", "/swipe"] },
-      { label: "Campaigns", href: "/campaigns", icon: Megaphone, match: ["/campaigns"] },
+      { label: "Campaigns", href: "/campaigns", icon: Megaphone, match: ["/campaigns", "/brand"] },
       inbox,
       profile,
     ];
