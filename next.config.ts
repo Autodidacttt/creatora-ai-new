@@ -1,9 +1,21 @@
 import type { NextConfig } from "next";
 
+// Only the project URL and the publishable key are exposed to the browser.
+// Secret key / Gemini key stay server-side (read via process.env in server-only modules).
 const nextConfig: NextConfig = {
-  /* config options here */
-  cacheComponents: true,
-  partialPrefetching: true,
+  env: {
+    NEXT_PUBLIC_SUPABASE_URL: process.env.SUPABASE_URL ?? "",
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: process.env.SUPABASE_PUBLISHABLE_KEY ?? "",
+  },
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "*.supabase.co" },
+      { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "assets.mixkit.co" },
+      { protocol: "https", hostname: "i.ytimg.com" },
+      { protocol: "https", hostname: "img.youtube.com" },
+    ],
+  },
   turbopack: {
     rules: {
       "*.css": {
