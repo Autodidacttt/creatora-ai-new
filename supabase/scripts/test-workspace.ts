@@ -8,6 +8,7 @@ import { createServerClient } from "@supabase/ssr";
 import sharp from "sharp";
 import { requireEnv } from "./env";
 import { DEMO_PASSWORD, brands, creators } from "../seed/data/accounts";
+import { seedId } from "../seed/ids";
 
 const URL_ = requireEnv("SUPABASE_URL");
 const PUB = requireEnv("SUPABASE_PUBLISHABLE_KEY");
@@ -280,9 +281,17 @@ async function main() {
     }
     const seededGuides = await admin.from("brand_guidelines").select("brand_id").in("name", ["Atelier Nova — Brand DNA", "Orbitone — Product language", "Tidewell — Sunny & sparkling"]);
     check("seeded guidelines belong to demo brands only", (seededGuides.data ?? []).length === 3 && seededGuides.data!.every((r) => demoIds.has(r.brand_id)));
-    const certs = await admin.from("ip_certificates").select("brand_id, creator_id, campaign_creator_id").not("brand_id", "in", `(${[brand.id].join(",")})`);
-    const seededCerts = (certs.data ?? []).filter((c) => demoIds.has(c.brand_id));
-    check("seeded licence records only link demo brands with demo creators", seededCerts.length >= 1 && seededCerts.every((c) => demoIds.has(c.creator_id)));
+    // Seeded licences are the seed's own rows (its deterministic submission ids). Licences issued through the app may
+    // link a demo brand with a real creator — real people can work with the demo brands — so "demo brand" isn't "seeded".
+    const seededSubmissions = ["sofia", "diego"].map((c) => seedId(`history-sub-atelier-holiday-${c}`));
+    const seededCerts = (await admin.from("ip_certificates").select("brand_id, creator_id").in("submission_id", seededSubmissions)).data ?? [];
+    check("seeded licence records only link demo brands with demo creators", seededCerts.length >= 1 && seededCerts.every((c) => demoIds.has(c.brand_id) && demoIds.has(c.creator_id)),
+      `${seededCerts.length} seeded`);
+    // Every licence, seeded or issued in the app, names the project's creator, its brief and that brief's brand
+    const certs = (await admin.from("ip_certificates").select("brand_id, creator_id, campaign_id, project:campaign_creators!inner(creator_id, campaign_id), brief:campaigns!inner(brand_id)")).data ?? [];
+    const one = <T,>(x: T | T[]) => (Array.isArray(x) ? x[0] : x);
+    check("every licence record matches its project, brief and brand", certs.length >= 1 && certs.every((c) =>
+      one(c.project).creator_id === c.creator_id && one(c.project).campaign_id === c.campaign_id && one(c.brief).brand_id === c.brand_id), `${certs.length} licences`);
   } finally {
     for (const id of created) {
       for (const bucket of ["submissions", "submission-previews"]) {
