@@ -1,8 +1,8 @@
 // Brand workspace + creator projects. Every call runs as the signed-in user: RLS and the workflow RPCs
 // (0017) decide what is allowed. Media processing / AI / PDFs go through the API routes.
 import type {
-  BrandOverview, BrandSprint, Guideline, HiringCandidate, ProjectDetail, ProjectSummary,
-  ReviewInboxItem, SubmissionDetail, SubmissionFile,
+  BrandOverview, BrandSprint, CampaignTask, Collaborators, Guideline, HiringCandidate, ProjectDetail, ProjectSummary,
+  ReviewInboxItem, SubmissionDetail, SubmissionFile, TaskStatus,
 } from "@/types/workspace";
 import type { GuidelineInput, SprintInput, StudioBrief, SubmissionDetails } from "@/lib/validation/workspace";
 import { sampleVideoFrames } from "@/lib/media/client-frames";
@@ -140,10 +140,7 @@ export async function rerunAiReview(id: string) {
 // ---------------------------------------------------------------------------
 // Hiring, sprints, delivery, escrow
 // ---------------------------------------------------------------------------
-export async function hireCreator(db: DB, campaignId: string, creatorId: string, amount: number, currency: string): Promise<string> {
-  return unwrap(await db.rpc("hire_creator", { p_campaign: campaignId, p_creator: creatorId, p_amount: amount, p_currency: currency }));
-}
-
+// Hiring itself is negotiated in chat and happens only via acceptProposalAndHire (services/messaging).
 export async function unhireCreator(db: DB, campaignId: string, creatorId: string) {
   unwrap(await db.rpc("unhire_creator", { p_campaign: campaignId, p_creator: creatorId }));
 }
@@ -172,7 +169,7 @@ export async function createSprint(db: DB, s: SprintInput): Promise<string> {
     brand_id: me, title: s.title, description: s.description, deliverables: s.deliverables,
     budget_min: s.budget, budget_max: s.budget, currency: s.currency, aspect_ratios: s.aspect_ratios,
     is_sprint: true, sprint_deadline: new Date(Date.now() + s.hours * 3_600_000).toISOString(),
-    creators_needed: 1, usage_rights: ["organic_social", "paid_social"], status: "active", ai_disclosure_required: true,
+    creators_needed: s.creators_needed, usage_rights: ["organic_social", "paid_social"], status: "active", ai_disclosure_required: true,
   }).select("id").single());
   return row.id;
 }
@@ -326,3 +323,33 @@ export async function inviteCreator(db: DB, campaignId: string, creatorId: strin
   return unwrap(await db.rpc("invite_creator", { p_campaign: campaignId, p_creator: creatorId, p_note: note ?? undefined }));
 }
 
+
+// ---------------------------------------------------------------------------
+// Collaborators: hired creators, the brief's group chat, tasks (all checks are in the RPCs / RLS, migration 0022)
+// ---------------------------------------------------------------------------
+/** Brand: everything. A collaborator: the members, the group chat and their own + group tasks. Null otherwise. */
+export async function getCollaborators(db: DB, campaignId: string): Promise<Collaborators | null> {
+  return as<Collaborators | null>(unwrap(await db.rpc("get_campaign_collaborators", { p_campaign: campaignId })));
+}
+
+/** Brand: a task for one hired creator (assigneeId) or the whole group (null). Posted in the matching chat. */
+export async function createTask(db: DB, campaignId: string, t: { title: string; description: string | null; due_date: string | null; assigneeId: string | null }) {
+  return unwrap(await db.rpc("create_campaign_task", {
+    p_campaign: campaignId, p_title: t.title, p_description: t.description, p_due_date: t.due_date, p_assignee: t.assigneeId,
+  }));
+}
+
+export async function updateTaskStatus(db: DB, taskId: string, status: TaskStatus) {
+  unwrap(await db.rpc("update_campaign_task_status", { p_task: taskId, p_status: status }));
+}
+
+export async function deleteTask(db: DB, taskId: string) {
+  unwrap(await db.rpc("delete_campaign_task", { p_task: taskId }));
+}
+
+/** The tasks the signed-in user can see on a brief (RLS: the brand, the assignee, or the group's collaborators). */
+export async function getTasks(db: DB, campaignId: string): Promise<CampaignTask[]> {
+  const rows = unwrap(await db.from("campaign_tasks").select("*").eq("campaign_id", campaignId)
+    .order("status", { ascending: true }).order("due_date", { ascending: true, nullsFirst: false }).order("created_at", { ascending: false }));
+  return rows as CampaignTask[];
+}

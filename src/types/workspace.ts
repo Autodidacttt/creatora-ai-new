@@ -1,5 +1,5 @@
 // Read models for the brand workspace + creator projects (shapes of the JSON returned by 0017 RPCs).
-import type { CampaignCard, CreatorCard } from "./app";
+import type { CampaignCard, CreatorCard, MiniProfile } from "./app";
 import type { ReviewChecks, ReviewInsights } from "@/lib/review/ai-review";
 
 export type ProjectStatus =
@@ -285,4 +285,42 @@ export interface BrandOverview {
     actor: PartyProfile | null;
   }[];
   deadlines: { campaign_id: string; title: string; is_sprint: boolean; due_at: string; open_projects: number }[];
+}
+
+// ---------------------------------------------------------------------------
+// Collaborators (hired creators on a brief), group chat and tasks
+// ---------------------------------------------------------------------------
+export type TaskStatus = "todo" | "in_progress" | "done";
+
+export interface CampaignTask {
+  id: string;
+  campaign_id: string;
+  title: string;
+  description: string | null;
+  due_date: string | null;
+  scope: "individual" | "group";
+  assigned_to: string | null;
+  status: TaskStatus;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  assignee?: MiniProfile | null;
+}
+
+export interface Collaborators {
+  campaign: { id: string; title: string; status: string; creators_needed: number };
+  count: number;
+  /** Only when the viewer is in the group */
+  group_conversation_id: string | null;
+  members: {
+    creator: MiniProfile;
+    project_id: string;
+    status: ProjectStatus;
+    hired_at: string;
+    /** Brand only */
+    agreed_amount: number | null;
+    currency: string;
+    conversation_id: string | null;
+  }[];
+  tasks: CampaignTask[];
 }

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Ban, CalendarClock, ClipboardList, FileSearch, History, Palette, Play, Star } from "lucide-react";
+import { ArrowLeft, Ban, CalendarClock, ClipboardList, FileSearch, History, ListTodo, Palette, Play, Star } from "lucide-react";
 import { toast } from "sonner";
 import { useDb } from "@/features/session";
 import { cancelProject, getProject, leaveProjectReview, startProject } from "@/services/workspace";
@@ -19,7 +19,8 @@ import { formatDate, formatMoney } from "@/lib/money";
 import { Countdown } from "./countdown";
 import { ExpandableCard } from "./expandable";
 import { GuidelineSummary } from "./guideline-summary";
-import { HireDialog } from "./hire-dialog";
+import { useStartNegotiation } from "./hire-button";
+import { CreatorTasks } from "./collaborators";
 import { PaymentCard, ReasonDialog } from "./payment-card";
 import { PROJECT_STATUS, ProjectStatusChip, ProjectStepper } from "./status";
 import { SubmitWork } from "./submit-work";
@@ -61,7 +62,7 @@ export function ProjectView({ id }: { id: string }) {
   const q = useQuery({ queryKey: ["project", id], queryFn: () => getProject(db, id), refetchInterval: 30_000 });
   const [busy, setBusy] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
-  const [hireOpen, setHireOpen] = useState(false);
+  const negotiation = useStartNegotiation();
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["project", id] });
     ["my-projects", "deliveries", "brand-overview", "dashboard"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
@@ -145,7 +146,12 @@ export function ProjectView({ id }: { id: string }) {
         </div>
 
         <aside className="min-w-0 space-y-4 lg:sticky lg:top-24 lg:h-fit">
-          <PaymentCard project={p} payments={p.payments} role={p.role} onChanged={refresh} onSetAmount={() => setHireOpen(true)} />
+          <PaymentCard project={p} payments={p.payments} role={p.role} onChanged={refresh} onSetAmount={() => negotiation.start(p.campaign_id, p.creator.id)} />
+          {isCreator && p.hired_at && !["cancelled", "rejected"].includes(p.status) && (
+            <ExpandableCard icon={<ListTodo />} title="Tasks" subtitle="From the brand — yours and the group's" defaultOpen>
+              <CreatorTasks campaignId={p.campaign_id} />
+            </ExpandableCard>
+          )}
           <ExpandableCard icon={<History />} title="Timeline" subtitle={`${p.events.length} event${p.events.length === 1 ? "" : "s"}`} defaultOpen>
             <Timeline events={p.events} />
           </ExpandableCard>
@@ -167,10 +173,6 @@ export function ProjectView({ id }: { id: string }) {
       <ReasonDialog open={cancelOpen} onOpenChange={setCancelOpen} title="Cancel this project?" cta="Cancel project" danger
         description="The creator is notified. Any funded escrow is refunded to you automatically (test mode)."
         onSubmit={async (reason) => { await cancelProject(db, p.id, reason); toast.success("Project cancelled"); refresh(); }} />
-      {!isCreator && (
-        <HireDialog open={hireOpen} onOpenChange={setHireOpen} campaignId={p.campaign_id} creator={p.creator}
-          suggestedAmount={p.agreed_amount ?? p.campaign.budget_min} currency={p.campaign.currency} onHired={refresh} />
-      )}
     </div>
   );
 }

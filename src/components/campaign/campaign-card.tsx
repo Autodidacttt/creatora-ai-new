@@ -86,7 +86,7 @@ export function CampaignCard({ campaign, score, reasons, footer, showBrand = tru
           {[
             ["Applications", campaign.stats.applications],
             ["Shortlisted", campaign.stats.shortlisted],
-            ["Selected", campaign.stats.selected],
+            ["Hired", campaign.stats.selected],
           ].map(([k, v]) => (
             <div key={k} className={cn("rounded-2xl bg-card px-3 py-2 text-center")}>
               <p className="display text-lg tabular-nums">{v}</p>

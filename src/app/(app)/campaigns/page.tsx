@@ -8,6 +8,7 @@ import type { CampaignStatus } from "@/types/app";
 import { useDb, useMe } from "@/features/session";
 import { getBrandCampaigns } from "@/services/campaigns";
 import { CampaignCard } from "@/components/campaign/campaign-card";
+import { CollaboratorsBar } from "@/components/workspace/collaborators";
 import { SegmentedTabs } from "@/components/ui/tabs";
 import { EmptyState, ErrorState, Skeleton } from "@/components/ui/states";
 import { PillCTA } from "@/components/ui/pill-cta";
@@ -71,7 +72,7 @@ export default function CampaignsPage() {
           action={<Link href="/brand/campaigns/studio" className={buttonVariants({ variant: "primary" })}><Plus /> Create a campaign</Link>} />
       )}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {list.data?.items.map((c) => <CampaignCard key={c.id} campaign={c} showBrand={false} showStats />)}
+        {list.data?.items.map((c) => <CampaignCard key={c.id} campaign={c} showBrand={false} showStats footer={<CollaboratorsBar campaign={c} />} />)}
       </div>
     </div>
   );
