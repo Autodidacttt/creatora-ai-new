@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Award, CircleDollarSign, Download, FlaskConical, Lock, RotateCcw, Scale, Wallet } from "lucide-react";
+import { Award, CircleDollarSign, CreditCard, Download, FlaskConical, Lock, RotateCcw, Scale, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import type { PaymentEvent, ProjectSummary } from "@/types/workspace";
 import { useDb } from "@/features/session";
@@ -57,16 +57,25 @@ export function ReasonDialog({ open, onOpenChange, title, description, cta, min 
 }
 
 /** Escrow status, ledger and the next payment action for the viewer's role. Internal test mode only. */
-export function PaymentCard({ project, payments, role, onChanged, onSetAmount }: {
+export function PaymentCard({ project, payments, role, onChanged, onSetAmount, fundOpen, onFundOpenChange }: {
   project: ProjectSummary;
   payments?: PaymentEvent[];
   role: "creator" | "brand" | "admin";
   onChanged: () => void;
   onSetAmount?: () => void;
+  /** Lets the page open the "Fund project" step (e.g. straight after Hire) */
+  fundOpen?: boolean;
+  onFundOpenChange?: (o: boolean) => void;
 }) {
   const db = useDb();
   const [busy, setBusy] = useState<string | null>(null);
-  const [dialog, setDialog] = useState<"refund" | "dispute" | "fund" | null>(null);
+  const [localDialog, setLocalDialog] = useState<"refund" | "dispute" | "fund" | null>(null);
+  const dialog = fundOpen ? "fund" : localDialog;
+  const setDialog = (d: "refund" | "dispute" | "fund" | null) => {
+    if (onFundOpenChange && (d === "fund" || dialog === "fund")) onFundOpenChange(d === "fund");
+    setLocalDialog(d === "fund" && onFundOpenChange ? null : d);
+  };
+  const [paying, setPaying] = useState(false);
   const e = project.escrow;
   const s = project.status;
   const run = async (key: string, fn: () => Promise<unknown>, ok: string) => {
@@ -114,7 +123,7 @@ export function PaymentCard({ project, payments, role, onChanged, onSetAmount }:
           <Button variant="primary" onClick={onSetAmount} title="Agree the fee in chat; accepting the final proposal opens escrow"><Wallet /> Agree the fee in chat</Button>
         )}
         {role === "brand" && e?.status === "unfunded" && !["rejected", "cancelled", "completed"].includes(s) && (
-          <Button variant="primary" loading={busy === "fund"} onClick={() => setDialog("fund")}><Lock /> Fund escrow</Button>
+          <Button variant="primary" loading={busy === "fund"} onClick={() => setDialog("fund")}><Lock /> Fund project</Button>
         )}
         {role === "brand" && e?.status === "funded" && s === "approved" && (
           <Button variant="primary" loading={busy === "release"} onClick={() => run("release", async () => {
@@ -162,21 +171,45 @@ export function PaymentCard({ project, payments, role, onChanged, onSetAmount }:
         </details>
       )}
 
-      <Dialog open={dialog === "fund"} onOpenChange={(o) => setDialog(o ? "fund" : null)} title="Fund escrow (test mode)" size="sm"
-        description="Moves the agreed fee into escrow in Creatora's internal test ledger. No card is charged and no real money moves.">
-        {e && (
+      <Dialog open={dialog === "fund"} onOpenChange={(o) => !paying && setDialog(o ? "fund" : null)} title="Fund project" size="sm"
+        description="The agreed price goes into escrow. Work starts as soon as it's funded; you release it after approving the final version.">
+        {e && e.status === "unfunded" ? (
           <div className="space-y-4">
-            <p className="rounded-2xl bg-ink/[0.04] px-4 py-3 text-sm">
-              {formatMoney(e.amount, e.currency)} + {formatMoney(e.platform_fee, e.currency)} fee = <b>{formatMoney(e.amount + e.platform_fee, e.currency)}</b>
+            <p className="inline-flex items-center gap-1.5 rounded-full bg-ink/[0.06] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-ink-2">
+              <FlaskConical className="size-3.5" aria-hidden /> Demo, no real money
             </p>
+            {/* Simulated payment sheet: nothing is charged, the internal demo escrow ledger is updated */}
+            <div className="rounded-2xl border border-line bg-card p-4 shadow-sm">
+              <div className="flex items-center justify-between text-sm">
+                <span className="flex items-center gap-2 font-medium"><CreditCard className="size-4" /> Demo card •••• 4242</span>
+                <span className="text-xs text-ink-3">Simulated</span>
+              </div>
+              <dl className="mt-3 space-y-1 text-sm">
+                <div className="flex justify-between"><dt className="text-ink-2">Agreed price</dt><dd className="tabular-nums">{formatMoney(e.amount, e.currency)}</dd></div>
+                <div className="flex justify-between"><dt className="text-ink-2">Platform fee</dt><dd className="tabular-nums">{formatMoney(e.platform_fee, e.currency)}</dd></div>
+                <div className="flex justify-between border-t border-line pt-1 font-semibold"><dt>Total</dt><dd className="tabular-nums">{formatMoney(e.amount + e.platform_fee, e.currency)}</dd></div>
+              </dl>
+            </div>
             <div className="flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setDialog(null)}>Cancel</Button>
-              <Button variant="primary" loading={busy === "fund"} onClick={async () => {
-                await run("fund", () => fundEscrow(db, project.id), "Escrow funded (test mode)");
-                setDialog(null);
-              }}><Lock /> Fund escrow</Button>
+              <Button variant="ghost" disabled={paying} onClick={() => setDialog(null)}>Not now</Button>
+              <Button variant="primary" loading={paying} onClick={async () => {
+                setPaying(true);
+                try {
+                  await new Promise((resolve) => setTimeout(resolve, 900)); // simulated processing, demo only
+                  await fundEscrow(db, project.id);
+                  toast.success("Project funded (demo) — the creator can start");
+                  setDialog(null);
+                  onChanged();
+                } catch (err) {
+                  toast.error(errorMessage(err));
+                } finally {
+                  setPaying(false);
+                }
+              }}>{paying ? "Processing demo payment…" : <><Lock /> Pay {formatMoney(e.amount + e.platform_fee, e.currency)} (demo)</>}</Button>
             </div>
           </div>
+        ) : (
+          <p className="text-sm text-ink-2">{e ? "This project is already funded." : "Agree the fee in chat first — accepting it opens the escrow."}</p>
         )}
       </Dialog>
       <ReasonDialog open={dialog === "refund"} onOpenChange={(o) => setDialog(o ? "refund" : null)} title="Refund escrow"

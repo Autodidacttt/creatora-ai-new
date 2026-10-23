@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Ban, CalendarClock, ClipboardList, FileSearch, History, ListTodo, Palette, Play, Star } from "lucide-react";
+import { ArrowLeft, Ban, CalendarClock, ClipboardList, FileSearch, History, Hourglass, ListTodo, Lock, Palette, Play, Star } from "lucide-react";
 import { toast } from "sonner";
 import { useDb } from "@/features/session";
 import { cancelProject, getProject, leaveProjectReview, startProject } from "@/services/workspace";
@@ -63,6 +64,8 @@ export function ProjectView({ id }: { id: string }) {
   const [busy, setBusy] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const negotiation = useStartNegotiation();
+  // "Fund project" opens straight after Hire (/brand/campaigns/projects/:id?fund=1)
+  const [fundOpen, setFundOpen] = useState(useSearchParams().get("fund") === "1");
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["project", id] });
     ["my-projects", "deliveries", "brand-overview", "dashboard"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
@@ -106,6 +109,18 @@ export function ProjectView({ id }: { id: string }) {
             <dt className="text-xs text-ink-3">Payment</dt><dd>{p.payment_status === "paid" ? "Paid" : p.escrow?.status === "funded" ? "In escrow" : "Pending"}</dd>
           </dl>
         </div>
+        {p.status === "awaiting_funding" && (
+          <div role="status" className="mt-5 flex flex-wrap items-center gap-3 rounded-2xl border border-amber/50 bg-amber-soft/70 p-3.5 text-sm">
+            <Hourglass className="size-4 shrink-0" aria-hidden />
+            <span className="min-w-0 flex-1">
+              {isCreator
+                ? <><strong>Waiting for the brand to fund.</strong> You can start, submit work and receive tasks once the project is funded.</>
+                : <><strong>Fund this project to start.</strong> {p.creator.display_name} can&apos;t start, submit or get tasks until it&apos;s funded (demo escrow, no real money).</>}
+            </span>
+            {!isCreator && p.escrow?.status === "unfunded" && <Button size="sm" variant="primary" onClick={() => setFundOpen(true)}><Lock /> Fund project</Button>}
+            {!isCreator && <Button size="sm" variant="ghost" onClick={() => setCancelOpen(true)}><Ban /> Cancel hire</Button>}
+          </div>
+        )}
         <ProjectStepper status={p.status} hired={!!p.hired_at} className="mt-6" />
         <div className="mt-5 flex flex-wrap items-center gap-3 rounded-2xl bg-card/70 p-3.5">
           <p className="min-w-0 flex-1 text-sm">{PROJECT_STATUS[p.status][isCreator ? "creator" : "brand"]}</p>
@@ -146,7 +161,8 @@ export function ProjectView({ id }: { id: string }) {
         </div>
 
         <aside className="min-w-0 space-y-4 lg:sticky lg:top-24 lg:h-fit">
-          <PaymentCard project={p} payments={p.payments} role={p.role} onChanged={refresh} onSetAmount={() => negotiation.start(p.campaign_id, p.creator.id)} />
+          <PaymentCard project={p} payments={p.payments} role={p.role} onChanged={refresh} onSetAmount={() => negotiation.start(p.campaign_id, p.creator.id)}
+            fundOpen={!isCreator && fundOpen} onFundOpenChange={setFundOpen} />
           {isCreator && p.hired_at && !["cancelled", "rejected"].includes(p.status) && (
             <ExpandableCard icon={<ListTodo />} title="Tasks" subtitle="From the brand — yours and the group's" defaultOpen>
               <CreatorTasks campaignId={p.campaign_id} />
@@ -165,13 +181,16 @@ export function ProjectView({ id }: { id: string }) {
             </ExpandableCard>
           )}
           {!isCreator && !["completed", "rejected", "cancelled", "approved"].includes(p.status) && p.hired_at && (
-            <Button variant="ghost" size="sm" onClick={() => setCancelOpen(true)}><Ban /> Cancel project</Button>
+            <Button variant="ghost" size="sm" onClick={() => setCancelOpen(true)}><Ban /> {p.status === "awaiting_funding" ? "Cancel hire" : "Cancel project"}</Button>
           )}
         </aside>
       </div>
 
-      <ReasonDialog open={cancelOpen} onOpenChange={setCancelOpen} title="Cancel this project?" cta="Cancel project" danger
-        description="The creator is notified. Any funded escrow is refunded to you automatically (test mode)."
+      <ReasonDialog open={cancelOpen} onOpenChange={setCancelOpen} title={p.status === "awaiting_funding" ? "Cancel this hire?" : "Cancel this project?"}
+        cta={p.status === "awaiting_funding" ? "Cancel hire" : "Cancel project"} danger
+        description={p.status === "awaiting_funding"
+          ? "The creator is notified. Nothing was paid, so there's nothing to refund."
+          : "The creator is notified. Any funded escrow is refunded to you automatically (demo)."}
         onSubmit={async (reason) => { await cancelProject(db, p.id, reason); toast.success("Project cancelled"); refresh(); }} />
     </div>
   );

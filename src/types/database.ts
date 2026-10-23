@@ -11,6 +11,24 @@ export type Database = {
         Update: { submission_id?: string | null; job?: string; status?: string; message?: string | null; duration_ms?: number | null; created_at?: string };
         Relationships: [];
       };
+      ai_match_reasons: {
+        Row: { search_id: string; creator_id: string; reasons: Json; gaps: Json; model: string | null; created_at: string };
+        Insert: { search_id: string; creator_id: string; reasons: Json; gaps?: Json; model?: string | null; created_at?: string };
+        Update: { search_id?: string; creator_id?: string; reasons?: Json; gaps?: Json; model?: string | null; created_at?: string };
+        Relationships: [];
+      };
+      ai_match_results: {
+        Row: { search_id: string; creator_id: string; rank: number; score: number; breakdown: Json; saved: boolean };
+        Insert: { search_id: string; creator_id: string; rank: number; score: number; breakdown?: Json; saved?: boolean };
+        Update: { search_id?: string; creator_id?: string; rank?: number; score?: number; breakdown?: Json; saved?: boolean };
+        Relationships: [];
+      };
+      ai_match_searches: {
+        Row: { id: string; brand_id: string; idea: string; requirements: Json; mode: string; notice: string | null; embedding_model: string | null; campaign_id: string | null; result_count: number; created_at: string };
+        Insert: { id?: string; brand_id: string; idea: string; requirements?: Json; mode: string; notice?: string | null; embedding_model?: string | null; campaign_id?: string | null; result_count?: number; created_at?: string };
+        Update: { id?: string; brand_id?: string; idea?: string; requirements?: Json; mode?: string; notice?: string | null; embedding_model?: string | null; campaign_id?: string | null; result_count?: number; created_at?: string };
+        Relationships: [];
+      };
       ai_review_results: {
         Row: { id: string; submission_id: string; status: string; brand_match_score: number | null; checks: Json; insights: Json; model_name: string | null; error: string | null; attempts: number; created_at: string; updated_at: string };
         Insert: { id?: string; submission_id: string; status?: string; brand_match_score?: number | null; checks?: Json; insights?: Json; model_name?: string | null; error?: string | null; attempts?: number; created_at?: string; updated_at?: string };
@@ -147,6 +165,12 @@ export type Database = {
         Row: { profile_id: string; experience_level: string; availability: string; years_experience: number | null; rate_min: number | null; rate_max: number | null; currency: string; workflow_overview: string | null; updated_at: string };
         Insert: { profile_id: string; experience_level?: string; availability?: string; years_experience?: number | null; rate_min?: number | null; rate_max?: number | null; currency?: string; workflow_overview?: string | null; updated_at?: string };
         Update: { profile_id?: string; experience_level?: string; availability?: string; years_experience?: number | null; rate_min?: number | null; rate_max?: number | null; currency?: string; workflow_overview?: string | null; updated_at?: string };
+        Relationships: [];
+      };
+      creator_embeddings: {
+        Row: { creator_id: string; embedding: string | null; model: string | null; source_hash: string | null; stale: boolean; marked_at: string; embedded_at: string | null };
+        Insert: { creator_id: string; embedding?: string | null; model?: string | null; source_hash?: string | null; stale?: boolean; marked_at?: string; embedded_at?: string | null };
+        Update: { creator_id?: string; embedding?: string | null; model?: string | null; source_hash?: string | null; stale?: boolean; marked_at?: string; embedded_at?: string | null };
         Relationships: [];
       };
       creator_experiences: {
@@ -367,7 +391,7 @@ export type Database = {
       };
     };
     Functions: {
-      accept_offer: { Args: { p_message: string }; Returns: undefined };
+      accept_offer: { Args: { p_message: string }; Returns: string };
       admin_audit_log: { Args: { p_limit?: number | null }; Returns: { id: number; action: string; target_type: string; target_id: string; meta: Json; created_at: string; actor: Json }[] };
       admin_list_campaigns: { Args: { p_status?: string | null }; Returns: { campaign: Json; total_count: number }[] };
       admin_list_posts: { Args: { p_query?: string | null; p_removed?: boolean | null; p_limit?: number | null; p_offset?: number | null }; Returns: { post: Json; reports: number; total_count: number }[] };
@@ -375,15 +399,18 @@ export type Database = {
       admin_list_users: { Args: { p_query?: string | null; p_role?: string | null; p_limit?: number | null; p_offset?: number | null }; Returns: { id: string; role: string; username: string; display_name: string; avatar_url: string; email: string; is_verified: boolean; is_suspended: boolean; created_at: string; followers: number; posts: number; pending_verifications: number; total_count: number }[] };
       admin_list_verifications: { Args: { p_status?: string | null }; Returns: { id: string; type: string; title: string; status: string; evidence_url: string; evidence_notes: string; created_at: string; reviewed_at: string; creator: Json; subject: string }[] };
       admin_stats: { Args: Record<PropertyKey, never>; Returns: Json };
+      ai_match_evidence: { Args: { p_search: string; p_creator: string }; Returns: Json };
       assert_admin: { Args: Record<PropertyKey, never>; Returns: undefined };
       campaign_card: { Args: { p_id: string }; Returns: Json };
       can_access_originals: { Args: { p_submission: string }; Returns: boolean };
       can_read_submission_object: { Args: { p_bucket: string; p_name: string }; Returns: boolean };
       can_view_submission: { Args: { p_submission: string }; Returns: boolean };
       cancel_project: { Args: { p_project: string; p_reason: string }; Returns: undefined };
+      create_ai_match_search: { Args: { p_idea: string; p_requirements: Json; p_mode: string; p_notice: string; p_model: string; p_campaign?: string | null }; Returns: string };
       create_campaign_task: { Args: { p_campaign: string; p_title: string; p_description?: string | null; p_due_date?: string | null; p_assignee?: string | null }; Returns: string };
       create_submission: { Args: { p_project: string }; Returns: string };
       creator_card: { Args: { p_id: string }; Returns: Json };
+      creator_embedding_queue: { Args: { p_model: string; p_limit?: number | null }; Returns: { creator_id: string; source: string; source_hash: string; queued_at: string }[] };
       creator_search_flags: { Args: { p_query: string; p_skills: number[]; p_categories: number[]; p_tools: number[]; p_content_types: number[]; p_styles: number[]; p_experience: string[]; p_availability: string[]; p_languages: number[]; p_verified_only: boolean }; Returns: { id: string; text_score: number; followers: number; created_at: string; m_query: boolean; m_skills: boolean; m_categories: boolean; m_tools: boolean; m_content_types: boolean; m_styles: boolean; m_experience: boolean; m_availability: boolean; m_languages: boolean; m_verified: boolean; overlap: number }[] };
       creator_seen: { Args: { p_creator: string }; Returns: boolean };
       current_app_role: { Args: Record<PropertyKey, never>; Returns: string };
@@ -399,6 +426,7 @@ export type Database = {
       dispute_escrow: { Args: { p_project: string; p_reason: string }; Returns: undefined };
       escrow_transition_allowed: { Args: { p_from: string; p_to: string }; Returns: boolean };
       fund_escrow: { Args: { p_project: string }; Returns: undefined };
+      get_ai_match_results: { Args: { p_search: string; p_limit?: number | null; p_offset?: number | null }; Returns: { rank: number; score: number; breakdown: Json; saved: boolean; creator: Json; total_count: number }[] };
       get_brand_campaigns: { Args: { p_brand?: string | null; p_status?: string | null; p_limit?: number | null; p_offset?: number | null }; Returns: { campaign: Json; total_count: number }[] };
       get_brand_dashboard: { Args: Record<PropertyKey, never>; Returns: Json };
       get_brand_overview: { Args: Record<PropertyKey, never>; Returns: Json };
@@ -430,7 +458,6 @@ export type Database = {
       get_swipe_deck: { Args: { p_campaign_id?: string | null; p_limit?: number | null; p_include_seen?: boolean | null }; Returns: { creator: Json; score: number; reasons: string[]; campaign_id: string }[] };
       get_unread_counts: { Args: Record<PropertyKey, never>; Returns: Json };
       hire_creator: { Args: { p_campaign: string; p_creator: string; p_amount: number; p_currency?: string | null }; Returns: string } | { Args: { p_proposal: string }; Returns: string };
-      invite_creator: { Args: { p_campaign: string; p_creator: string; p_note?: string | null }; Returns: boolean };
       is_active_user: { Args: Record<PropertyKey, never>; Returns: boolean };
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
       is_campaign_collaborator: { Args: { p_campaign: string; p_user: string }; Returns: boolean };
@@ -454,18 +481,19 @@ export type Database = {
       record_post_view: { Args: { p_post: string; p_watch_ms?: number | null }; Returns: undefined };
       record_profile_visit: { Args: { p_creator: string }; Returns: undefined };
       refund_escrow: { Args: { p_project: string; p_reason: string }; Returns: undefined };
-      reject_proposal: { Args: { p_proposal: string; p_reason?: string | null }; Returns: undefined };
       release_escrow: { Args: { p_project: string }; Returns: string };
       review_submission: { Args: { p_submission: string; p_decision: string; p_feedback?: string | null }; Returns: undefined };
+      run_ai_match: { Args: { p_search: string; p_query_embedding: string; p_weights: Json; p_keep?: number | null }; Returns: number };
       search_creators: { Args: { p_query?: string | null; p_skills?: number[] | null; p_categories?: number[] | null; p_tools?: number[] | null; p_content_types?: number[] | null; p_styles?: number[] | null; p_experience?: string[] | null; p_availability?: string[] | null; p_languages?: number[] | null; p_verified_only?: boolean | null; p_sort?: string | null; p_match?: string | null; p_exclude?: string[] | null; p_limit?: number | null; p_offset?: number | null }; Returns: { creator: Json; score: number; matched_groups: number; total_count: number }[] };
       search_creators_diagnostics: { Args: { p_query?: string | null; p_skills?: number[] | null; p_categories?: number[] | null; p_tools?: number[] | null; p_content_types?: number[] | null; p_styles?: number[] | null; p_experience?: string[] | null; p_availability?: string[] | null; p_languages?: number[] | null; p_verified_only?: boolean | null }; Returns: { filter_group: string; results_without: number }[] };
       seed_dashboard_history: { Args: { p_creator: string; p_demo_ids: string[]; p_base: number; p_spike_days_ago: number; p_dip_from: number; p_dip_to: number }; Returns: undefined };
-      send_final_proposal: { Args: { p_conversation: string; p_note?: string | null }; Returns: string };
       send_offer: { Args: { p_conversation: string; p_price: number; p_terms: Json }; Returns: string };
+      set_ai_match_saved: { Args: { p_search: string; p_creator: string; p_saved: boolean }; Returns: undefined };
       short_texts: { Args: { p: string[]; p_max: number }; Returns: boolean };
       sprint_closed: { Args: { p_campaign: string }; Returns: boolean };
       start_negotiation: { Args: { p_campaign: string; p_creator: string }; Returns: string };
       start_project: { Args: { p_project: string }; Returns: undefined };
+      store_creator_embedding: { Args: { p_creator: string; p_embedding: string; p_model: string; p_hash: string; p_queued_at: string }; Returns: undefined };
       submission_json: { Args: { p_submission: string }; Returns: Json };
       submit_submission: { Args: { p_submission: string }; Returns: undefined };
       unhire_creator: { Args: { p_campaign: string; p_creator: string }; Returns: undefined };

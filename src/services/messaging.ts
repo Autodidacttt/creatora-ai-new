@@ -63,20 +63,15 @@ export async function sendOffer(db: DB, conversationId: string, price: number, t
   return unwrap(await db.rpc("send_offer", { p_conversation: conversationId, p_price: price, p_terms: terms as unknown as Json }));
 }
 
-export async function acceptOffer(db: DB, messageId: string) {
-  unwrap(await db.rpc("accept_offer", { p_message: messageId }));
+/** Accepting the other side's latest offer is the agreement: the server records it as an accepted proposal (returned). */
+export async function acceptOffer(db: DB, messageId: string): Promise<string> {
+  return unwrap(await db.rpc("accept_offer", { p_message: messageId }));
 }
 
-/** Creator: the final proposal, built server-side from the agreed offer. */
-export async function sendFinalProposal(db: DB, conversationId: string, note: string | null) {
-  return unwrap(await db.rpc("send_final_proposal", { p_conversation: conversationId, p_note: note }));
-}
-
-/** Brand: "Accept & hire", the only way to hire. Price and terms come from the proposal. Returns the project id. */
-export async function acceptProposalAndHire(db: DB, proposalId: string): Promise<string> {
+/**
+ * Brand: Hire from the accepted agreement (price and terms come from it, server-side). The project starts as
+ * awaiting_funding; nothing continues until the brand funds it. Returns the project id.
+ */
+export async function hireFromAgreement(db: DB, proposalId: string): Promise<string> {
   return unwrap(await db.rpc("hire_creator", { p_proposal: proposalId }));
-}
-
-export async function rejectProposal(db: DB, proposalId: string, reason: string | null) {
-  unwrap(await db.rpc("reject_proposal", { p_proposal: proposalId, p_reason: reason }));
 }

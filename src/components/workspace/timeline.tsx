@@ -21,7 +21,7 @@ function describe(e: ProjectEvent): { icon: ReactNode; text: string } {
   if (e.kind === "comment") return { icon: <MessageSquare />, text: `${who} commented` };
   const s = PROJECT_STATUS[e.event as ProjectStatus];
   const version = d.version ? ` · v${d.version}` : "";
-  const amount = e.event === "hired" && d.amount_label ? ` · ${d.amount_label}` : "";
+  const amount = (e.event === "hired" || e.event === "awaiting_funding") && d.amount_label ? ` · ${d.amount_label}` : "";
   return { icon: s?.icon ?? <MessageSquare />, text: `${s?.label ?? e.event}${version}${amount} — ${who}` };
 }
 

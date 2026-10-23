@@ -109,7 +109,8 @@ export async function getApplications(db: DB, campaignId: string): Promise<Appli
 
 export interface PipelineEntry {
   creator: CreatorCard;
-  stage: "shortlisted" | "selected" | "completed";
+  /** awaiting_funding: hired, but the brand hasn't funded the project yet */
+  stage: "shortlisted" | "awaiting_funding" | "selected" | "completed";
   note: string | null;
   created_at: string;
   applied: boolean;

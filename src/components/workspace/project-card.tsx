@@ -11,7 +11,7 @@ import { EscrowChip, PROJECT_STATUS, ProjectStatusChip, ProjectStepper } from ".
 export function ProjectCard({ p, view, href, className }: { p: ProjectSummary; view: "creator" | "brand"; href: string; className?: string }) {
   const other = view === "creator" ? p.campaign.brand : p.creator;
   const sprintOpen = p.campaign.is_sprint && p.campaign.sprint_deadline && !p.campaign.sprint_closed;
-  const needsMe = view === "creator" ? p.status === "revision_requested" || p.status === "hired" : ["submitted", "resubmitted", "approved"].includes(p.status);
+  const needsMe = view === "creator" ? p.status === "revision_requested" || p.status === "hired" : ["awaiting_funding", "submitted", "resubmitted", "approved"].includes(p.status);
   return (
     <Link href={href} className={cn("glass group block rounded-[1.75rem] p-4 transition-all hover:-translate-y-0.5 hover:shadow-lift sm:p-5", needsMe && "ring-2 ring-amber/60", className)}>
       <div className="flex items-start gap-3">

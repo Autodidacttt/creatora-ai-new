@@ -247,7 +247,8 @@ export interface ConversationInfo {
   members: (MiniProfile & { role: Role })[];
 }
 
-export type NegotiationState = "open" | "negotiating" | "agreed" | "proposal_sent" | "hired";
+/** agreed = both accepted the same offer (brand can hire) · awaiting_funding = hired, brand must fund · hired = funded / under way */
+export type NegotiationState = "open" | "negotiating" | "agreed" | "awaiting_funding" | "hired";
 
 export interface Negotiation {
   state: NegotiationState;
@@ -261,7 +262,7 @@ export interface Negotiation {
   application: { proposed_rate: number | null; status: string } | null;
   latest_offer: (MessagePayload & { message_id: string; sender_id: string }) | null;
   proposal: { id: string; version: number; status: string; price: number; currency: string; terms: OfferTerms; note: string | null; sent_at: string | null } | null;
-  project: { id: string; status: string } | null;
+  project: { id: string; status: string; escrow_status: string | null } | null;
 }
 
 export interface Message {
@@ -282,7 +283,6 @@ export interface Message {
 export interface OfferTerms {
   deliverables: string;
   deadline: string | null;
-  revisions: number;
   usage_rights: string[];
 }
 

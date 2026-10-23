@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import {
-  Ban, BadgeCheck, CheckCircle2, CircleDashed, CircleDollarSign, Clock3, FileCheck2, Hammer, Lock, RotateCcw,
+  Ban, BadgeCheck, CheckCircle2, CircleDashed, CircleDollarSign, Clock3, FileCheck2, Hammer, Hourglass, Lock, RotateCcw,
   Scale, Send, Star, UserCheck, Wallet, XCircle,
 } from "lucide-react";
 import type { EscrowStatus, ProjectStatus, SubmissionStatus } from "@/types/workspace";
@@ -12,12 +12,13 @@ type Tone = "neutral" | "amber" | "solid" | "dark" | "success" | "danger" | "out
 export const PROJECT_STATUS: Record<ProjectStatus, { label: string; tone: Tone; icon: ReactNode; creator: string; brand: string }> = {
   applied: { label: "Applied", tone: "outline", icon: <Send />, creator: "You applied. In a sprint you can submit spec work right away.", brand: "Applied — not hired yet." },
   shortlisted: { label: "Shortlisted", tone: "amber", icon: <Star />, creator: "You're on the shortlist.", brand: "On your shortlist." },
+  awaiting_funding: { label: "Awaiting funding", tone: "amber", icon: <Hourglass />, creator: "You're hired — waiting for the brand to fund the project. Work starts once it's funded.", brand: "Hired — fund the project so the creator can start." },
   hired: { label: "Hired", tone: "amber", icon: <UserCheck />, creator: "You're hired — start when you're ready.", brand: "Hired. Waiting for the creator to start." },
   in_progress: { label: "In progress", tone: "amber", icon: <Hammer />, creator: "Working on it. Submit when your first version is ready.", brand: "The creator is working on it." },
   submitted: { label: "In review", tone: "solid", icon: <FileCheck2 />, creator: "Submitted — the brand is reviewing.", brand: "Waiting for your review." },
   revision_requested: { label: "Revision requested", tone: "danger", icon: <RotateCcw />, creator: "The brand asked for changes — see the feedback and resubmit.", brand: "Waiting for the creator's revision." },
   resubmitted: { label: "Revision in review", tone: "solid", icon: <FileCheck2 />, creator: "Revised version submitted — the brand is reviewing.", brand: "A revised version is waiting for your review." },
-  approved: { label: "Approved", tone: "success", icon: <BadgeCheck />, creator: "Approved! Waiting for the brand to release payment.", brand: "Approved — fund and release payment to complete." },
+  approved: { label: "Approved", tone: "success", icon: <BadgeCheck />, creator: "Approved! Waiting for the brand to release payment.", brand: "Approved — release payment to complete." },
   completed: { label: "Completed", tone: "dark", icon: <CheckCircle2 />, creator: "Complete and paid.", brand: "Complete — licence record issued." },
   rejected: { label: "Rejected", tone: "danger", icon: <XCircle />, creator: "The brand rejected this work.", brand: "You rejected this work." },
   cancelled: { label: "Cancelled", tone: "neutral", icon: <Ban />, creator: "This project was cancelled.", brand: "Cancelled." },
@@ -32,7 +33,7 @@ export const SUBMISSION_STATUS: Record<SubmissionStatus, { label: string; tone: 
 };
 
 export const ESCROW_STATUS: Record<EscrowStatus, { label: string; tone: Tone; icon: ReactNode }> = {
-  unfunded: { label: "Not funded", tone: "outline", icon: <Wallet /> },
+  unfunded: { label: "Pending funding", tone: "outline", icon: <Wallet /> },
   funded: { label: "Funded · in escrow", tone: "amber", icon: <Lock /> },
   released: { label: "Paid", tone: "success", icon: <CircleDollarSign /> },
   refunded: { label: "Refunded", tone: "neutral", icon: <RotateCcw /> },
@@ -55,7 +56,7 @@ export function EscrowChip({ status, className }: { status: EscrowStatus | null 
 
 /** A compact, labelled progress rail of the project lifecycle. */
 const STEPS: { key: string; label: string; reached: ProjectStatus[] }[] = [
-  { key: "hired", label: "Hired", reached: ["hired", "in_progress", "submitted", "revision_requested", "resubmitted", "approved", "completed"] },
+  { key: "hired", label: "Hired", reached: ["awaiting_funding", "hired", "in_progress", "submitted", "revision_requested", "resubmitted", "approved", "completed"] },
   { key: "work", label: "Working", reached: ["in_progress", "submitted", "revision_requested", "resubmitted", "approved", "completed"] },
   { key: "review", label: "In review", reached: ["submitted", "revision_requested", "resubmitted", "approved", "completed"] },
   { key: "approved", label: "Approved", reached: ["approved", "completed"] },

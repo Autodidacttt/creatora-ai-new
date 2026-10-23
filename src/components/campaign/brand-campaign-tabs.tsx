@@ -22,7 +22,7 @@ import { useStartNegotiation } from "@/components/workspace/hire-button";
 import { canShortlist, SHORTLIST_LOCKED_HINT, ShortlistGate } from "./shortlist-gate";
 
 const PROPOSAL_LABEL: Record<string, string> = {
-  draft: "Proposal draft", sent: "Final proposal sent", accepted: "Proposal accepted", rejected: "Proposal declined", superseded: "Proposal replaced",
+  draft: "Proposal draft", sent: "Proposal sent", accepted: "Terms agreed", rejected: "Proposal declined", superseded: "Agreement replaced",
 };
 
 function usePipelineActions(campaign: CampaignCard) {
@@ -229,7 +229,7 @@ export function PipelineTab({ campaign }: { campaign: CampaignCard }) {
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="display text-lg">{title} <span className="text-sm font-normal text-ink-3">
-          {kind === "selected" ? `${list.length} of ${campaign.creators_needed} hired` : list.length}
+          {kind === "selected" ? `${list.filter((p) => p.stage !== "awaiting_funding").length} of ${campaign.creators_needed} hired` : list.length}
         </span></h3>
         {/* The creator count is a target, not a cap: brands can always hire more */}
         {kind === "selected" && (
@@ -245,7 +245,8 @@ export function PipelineTab({ campaign }: { campaign: CampaignCard }) {
             <Avatar src={p.creator.avatar_url} name={p.creator.display_name} verified={p.creator.is_verified} />
             <span className="min-w-0">
               <span className="block truncate text-sm font-semibold">{p.creator.display_name}</span>
-              <span className="block truncate text-xs text-ink-3">{p.applied ? "Applied" : "Invited from discovery"} · {timeAgo(p.created_at)}{p.stage === "completed" && " · completed"}</span>
+              <span className="block truncate text-xs text-ink-3">{p.applied ? "Applied" : "Added from discovery"} · {timeAgo(p.created_at)}{p.stage === "completed" && " · completed"}</span>
+              {p.stage === "awaiting_funding" && <span className="mt-0.5 block text-[11px] font-medium text-amber-2">Hired · awaiting funding — not counted until funded</span>}
               {p.added_while_draft && <span className="mt-0.5 block text-[11px] text-amber-2" title="Added before the brief was published. It stays, but new shortlists need a published brief.">Shortlisted while the brief was a draft</span>}
             </span>
           </Link>

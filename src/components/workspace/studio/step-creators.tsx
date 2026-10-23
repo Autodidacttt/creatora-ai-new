@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Mail, Rocket, Star, StarOff, Users } from "lucide-react";
+import { Rocket, Star, StarOff, Users } from "lucide-react";
 import { toast } from "sonner";
 import { useDb } from "@/features/session";
 import { rankForCampaign } from "@/services/discovery";
 import { getCampaign, getPipeline, setShortlisted } from "@/services/campaigns";
-import { inviteCreator, publishCampaign } from "@/services/workspace";
+import { publishCampaign } from "@/services/workspace";
+import { ContactButton } from "@/components/posts/actions";
 import { Avatar } from "@/components/ui/avatar";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
@@ -18,7 +19,7 @@ import { ScoreBreakdown, ScoreRing } from "@/components/campaign/score-breakdown
 import { errorMessage } from "@/lib/utils";
 import { SHORTLIST_LOCKED_HINT } from "@/components/campaign/shortlist-gate";
 
-/** Step 4: rank creators against the saved brief, publish, then shortlist / invite (both need a published brief). */
+/** Step 4: rank creators against the saved brief, publish, then shortlist (needs a published brief) or message them. */
 export function StepCreators({ campaignId, canPublish, publishProblem }: { campaignId: string; canPublish: boolean; publishProblem: string | null }) {
   const db = useDb();
   const qc = useQueryClient();
@@ -31,7 +32,6 @@ export function StepCreators({ campaignId, canPublish, publishProblem }: { campa
     getNextPageParam: (last) => last.nextPage,
   });
   const [busy, setBusy] = useState<string | null>(null);
-  const [invited, setInvited] = useState<string[]>([]);
   const live = campaign.data?.status === "active";
   const shortlisted = new Set(pipeline.data?.filter((p) => p.stage === "shortlisted").map((p) => p.creator.id));
 
@@ -46,7 +46,7 @@ export function StepCreators({ campaignId, canPublish, publishProblem }: { campa
       <div className="glass flex flex-wrap items-center gap-3 rounded-[1.75rem] p-4">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold">{live ? "Published — creators can apply" : "Ready to publish?"}</p>
-          <p className="text-xs text-ink-2">{live ? "Invite your top matches so they see it first." : publishProblem ?? "Publishing makes the brief visible in Opportunities and notifies the best-matching creators."}</p>
+          <p className="text-xs text-ink-2">{live ? "Shortlist or message your top matches — shortlisted creators are notified." : publishProblem ?? "Publishing makes the brief visible in Opportunities and notifies the best-matching creators."}</p>
         </div>
         {live ? (
           <Link href={`/campaigns/${campaignId}`} className={buttonVariants({ variant: "dark" })}>Open campaign</Link>
@@ -90,15 +90,7 @@ export function StepCreators({ campaignId, canPublish, publishProblem }: { campa
                   await pipeline.refetch();
                   toast.success(on ? "Removed from shortlist" : `${m.creator.display_name} shortlisted`);
                 })}>{on ? <StarOff /> : <Star />} {on ? "Shortlisted" : "Shortlist"}</Button>
-                <Button size="sm" variant="secondary" disabled={!live || invited.includes(m.creator.id)} loading={busy === `i${m.creator.id}`}
-                  title={live ? undefined : "Publish first to invite"}
-                  onClick={() => run(`i${m.creator.id}`, async () => {
-                    const sent = await inviteCreator(db, campaignId, m.creator.id);
-                    setInvited((x) => [...x, m.creator.id]);
-                    toast.success(sent ? `Invitation sent to ${m.creator.display_name}` : "Already invited");
-                  })}>
-                  <Mail /> {invited.includes(m.creator.id) ? "Invited" : "Invite"}
-                </Button>
+                <ContactButton profileId={m.creator.id} size="sm" label="Message" />
                 {m.creator.tools.slice(0, 2).map((t) => <Chip key={t.id} tone="outline">{t.name}</Chip>)}
               </div>
             </article>

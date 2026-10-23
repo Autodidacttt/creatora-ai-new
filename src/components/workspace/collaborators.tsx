@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ExternalLink, ListTodo, MessagesSquare, Plus, Trash2, Users } from "lucide-react";
+import { ExternalLink, Hourglass, ListTodo, Lock, MessagesSquare, Plus, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import type { CampaignTask, TaskStatus } from "@/types/workspace";
 import { useDb, useMe } from "@/features/session";
@@ -15,7 +15,7 @@ import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { Dialog } from "@/components/ui/overlay";
 import { EmptyState, ErrorState, Skeleton } from "@/components/ui/states";
 import { cn, errorMessage } from "@/lib/utils";
-import { formatDate } from "@/lib/money";
+import { formatDate, formatMoney } from "@/lib/money";
 import { ProjectStatusChip } from "./status";
 
 export const collaboratorLabel = (n: number) => (n === 0 ? "No collaborators yet" : `${n} Collaborator${n === 1 ? "" : "s"}`);
@@ -28,8 +28,8 @@ export function CollaboratorsBar({ campaign }: { campaign: { id: string; title: 
   const n = campaign.stats?.selected ?? 0;
   return (
     <div className="flex flex-wrap items-center gap-2 border-t border-line pt-3">
-      <button type="button" onClick={() => setOpen(true)} disabled={n === 0}
-        className="inline-flex items-center gap-1.5 rounded-full bg-card px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors hover:bg-card/70 disabled:cursor-default disabled:font-normal disabled:text-ink-3 disabled:shadow-none">
+      <button type="button" onClick={() => setOpen(true)}
+        className={cn("inline-flex items-center gap-1.5 rounded-full bg-card px-3 py-1.5 text-xs shadow-sm transition-colors hover:bg-card/70", n > 0 ? "font-semibold" : "text-ink-3")}>
         <Users className="size-3.5" /> {collaboratorLabel(n)}
       </button>
       <span className="text-xs text-ink-3">{n} of {campaign.creators_needed} hired</span>
@@ -135,7 +135,25 @@ export function CollaboratorsPanel({ campaignId, title, open, onOpenChange }: { 
       {q.isSuccess && !d && <ErrorState error="Only the brand and its hired creators can see this." title="Not available" />}
       {d && (
         <div className="space-y-5">
-          {d.members.length === 0 ? <EmptyState icon={<Users />} title="No collaborators yet" description="Hire creators by accepting their final proposals." /> : (
+          {d.awaiting_funding.length > 0 && (
+            <section className="space-y-2 rounded-2xl border border-amber/50 bg-amber-soft/60 p-3" aria-label="Awaiting funding">
+              <h3 className="flex items-center gap-1.5 text-sm font-semibold"><Hourglass className="size-4" /> Awaiting funding</h3>
+              <p className="text-xs text-ink-2">Hired, but not collaborators yet: they can&apos;t start, get tasks or join the group chat until you fund the project.</p>
+              <ul className="space-y-2">
+                {d.awaiting_funding.map((m) => (
+                  <li key={m.project_id} className="flex flex-wrap items-center gap-3 rounded-2xl bg-card/80 p-2.5">
+                    <Avatar src={m.creator.avatar_url} name={m.creator.display_name} verified={m.creator.is_verified} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold">{m.creator.display_name}</span>
+                      <span className="block text-[11px] text-ink-3">Hired {formatDate(m.hired_at)}{m.agreed_amount != null && ` · ${formatMoney(m.agreed_amount, m.currency)}`}</span>
+                    </span>
+                    <Link href={`/brand/campaigns/projects/${m.project_id}?fund=1`} className={buttonVariants({ size: "sm", variant: "primary" })}><Lock /> Fund project</Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {d.members.length === 0 ? <EmptyState icon={<Users />} title="No collaborators yet" description="Hire creators by accepting their offers in chat, then fund the project." /> : (
             <ul className="space-y-2">
               {d.members.map((m) => (
                 <li key={m.project_id} className="flex flex-wrap items-center gap-3 rounded-2xl bg-card/70 p-2.5">
@@ -153,7 +171,7 @@ export function CollaboratorsPanel({ campaignId, title, open, onOpenChange }: { 
           )}
           {d.group_conversation_id ? (
             <Link href={`/inbox/${d.group_conversation_id}`} className={buttonVariants({ variant: "secondary" })}><MessagesSquare /> Open group chat</Link>
-          ) : d.count > 0 && <p className="text-xs text-ink-3">A group chat opens automatically when a second creator is hired.</p>}
+          ) : d.count > 0 && <p className="text-xs text-ink-3">A group chat opens automatically when a second creator is hired and funded.</p>}
 
           <section className="space-y-2">
             <h3 className="flex items-center gap-1.5 text-sm font-semibold"><ListTodo className="size-4" /> Tasks</h3>

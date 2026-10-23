@@ -70,7 +70,9 @@ export function notificationHref(n: NotificationItem, role: string): string {
 
 const PROJECT_TEXT: Record<string, (who: string, t: string, d: NotificationItem["data"]) => string> = {
   hired: (who, t, d) => `${who} hired you for “${t}”${d.amount_label ? ` · ${d.amount_label}` : ""} 🎉`,
-  in_progress: (who, t) => `${who} started work on “${t}”`,
+  awaiting_funding: (who, t, d) => `${who} hired you for “${t}”${d.amount_label ? ` · ${d.amount_label}` : ""} — work starts once they fund the project`,
+  funding_required: (_who, t, d) => `Fund “${t}”${d.amount_label ? ` (${d.amount_label})` : ""} so your creator can start`,
+  in_progress: (who, t, d) => (d.funded ? `${who} funded “${t}” — you can start work` : `${who} started work on “${t}”`),
   submitted: (who, t, d) => `${who} submitted version ${d.version ?? 1} of “${t}” for review`,
   resubmitted: (who, t, d) => `${who} submitted revised version ${d.version ?? ""} of “${t}”`,
   revision_requested: (who, t, d) => `${who} requested a revision on “${t}”${d.note ? `: ${d.note}` : ""}`,
@@ -89,7 +91,8 @@ const PAYMENT_TEXT: Record<string, (who: string, t: string, d: NotificationItem[
 const PROPOSAL_TEXT: Record<string, (who: string, t: string, d: NotificationItem["data"]) => string> = {
   negotiation_opened: (who, t) => `${who} wants to hire you for “${t}” — agree the terms in chat`,
   offer: (who, t, d) => `${who} sent an offer for “${t}”${d.amount_label ? ` · ${d.amount_label}` : ""}`,
-  offer_accepted: (who, t, d) => `${who} accepted your offer for “${t}”${d.amount_label ? ` · ${d.amount_label}` : ""}`,
+  offer_accepted: (who, t, d) => `${who} accepted your offer for “${t}”${d.amount_label ? ` · ${d.amount_label}` : ""} — terms agreed`,
+  offer_accepted_hire: (who, t, d) => `${who} accepted your offer for “${t}”${d.amount_label ? ` · ${d.amount_label}` : ""} — hire them now`,
   proposal_sent: (who, t, d) => `${who} sent final proposal v${d.version ?? 1} for “${t}” — review and accept to hire`,
   proposal_accepted: (who, t, d) => `${who} accepted your proposal — you're hired for “${t}”${d.amount_label ? ` · ${d.amount_label}` : ""} 🎉`,
   proposal_rejected: (who, t, d) => `${who} declined proposal v${d.version ?? 1} for “${t}”`,
@@ -134,8 +137,9 @@ export function notificationText(n: NotificationItem): string {
       return fn ? fn(who, String(d.campaign_title ?? "a brief"), d) : `Task update on “${d.campaign_title ?? "a brief"}”`;
     }
     case "opportunity":
+      // Invites were removed; older invite notifications read as the brief being shared with you
       return d.invited
-        ? `${who} invited you to “${d.campaign_title ?? "a brief"}”${d.note ? `: ${d.note}` : ""}`
+        ? `${who} shared the brief “${d.campaign_title ?? "a brief"}” with you`
         : `New brief that matches your work: “${d.campaign_title ?? ""}”${d.score ? ` (${d.score}% relevance)` : ""}`;
     default: return "New activity";
   }

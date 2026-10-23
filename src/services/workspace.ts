@@ -318,10 +318,6 @@ export async function publishCampaign(db: DB, id: string): Promise<number> {
   return unwrap(await db.rpc("publish_campaign", { p_campaign: id }));
 }
 
-/** Returns false when this creator was already invited to the campaign. */
-export async function inviteCreator(db: DB, campaignId: string, creatorId: string, note?: string): Promise<boolean> {
-  return unwrap(await db.rpc("invite_creator", { p_campaign: campaignId, p_creator: creatorId, p_note: note ?? undefined }));
-}
 
 
 // ---------------------------------------------------------------------------

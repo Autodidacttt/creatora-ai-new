@@ -2,8 +2,9 @@
 import type { CampaignCard, CreatorCard, MiniProfile } from "./app";
 import type { ReviewChecks, ReviewInsights } from "@/lib/review/ai-review";
 
+/** awaiting_funding (0023): hired from an accepted agreement, but the brand hasn't funded the escrow yet. Nothing starts until it's funded. */
 export type ProjectStatus =
-  | "applied" | "shortlisted" | "hired" | "in_progress" | "submitted" | "revision_requested" | "resubmitted"
+  | "applied" | "shortlisted" | "awaiting_funding" | "hired" | "in_progress" | "submitted" | "revision_requested" | "resubmitted"
   | "approved" | "completed" | "rejected" | "cancelled";
 export type SubmissionStatus = "draft" | "submitted" | "revision_requested" | "approved" | "rejected";
 export type EscrowStatus = "unfunded" | "funded" | "released" | "refunded" | "disputed";
@@ -322,5 +323,7 @@ export interface Collaborators {
     currency: string;
     conversation_id: string | null;
   }[];
+  /** Brand only: hired but not funded yet (not collaborators until funded) */
+  awaiting_funding: { creator: MiniProfile; project_id: string; hired_at: string; agreed_amount: number | null; currency: string }[];
   tasks: CampaignTask[];
 }
