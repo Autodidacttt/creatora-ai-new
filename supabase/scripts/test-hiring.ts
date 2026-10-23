@@ -1,4 +1,5 @@
-// End-to-end checks for negotiated hiring, published-only shortlists, creator targets and collaborators (0022),
+// End-to-end checks for negotiated hiring (accepted offer = agreement → Hire → Fund), published-only shortlists,
+// creator targets and collaborators (0022 + 0023),
 // against your Supabase project through the public API (publishable key + RPCs, exactly what the app calls).
 // Throwaway brand + creator accounts; everything they create is deleted at the end.
 // Usage: npm run test:hiring
@@ -40,7 +41,7 @@ async function main() {
     if (r.error) throw new Error(`${what}: ${r.error.message}`);
     return r.data;
   };
-  const terms = { deliverables: "3 vertical reels (9:16, 15s)", deadline: "2026-12-15", revisions: 2, usage_rights: ["organic_social", "paid_social"] };
+  const terms = { deliverables: "3 vertical reels (9:16, 15s)", deadline: "2026-12-15", usage_rights: ["organic_social", "paid_social"] };
 
   try {
     const brand = await mk("brand", "brand");
@@ -63,7 +64,7 @@ async function main() {
     const bookmark = await c1.c.from("saved_opportunities").insert({ creator_id: c1.id, campaign_id: K });
     check("plain bookmarks (save) are unaffected", !bookmark.error, bookmark.error?.message);
 
-    console.log("\n▸ Negotiation → final proposal → Accept & hire");
+    console.log("\n▸ Accept the price → Hire at once → Fund project");
     const direct = await brand.c.rpc("hire_creator", { p_campaign: K, p_creator: c1.id, p_amount: 1, p_currency: "USD" });
     check("direct hire through the API is rejected", !!direct.error && /Direct hiring is disabled/.test(direct.error.message), direct.error?.message);
     check("another brand can't open a negotiation on this brief", !!(await orbitone.c.rpc("start_negotiation", { p_campaign: K, p_creator: c1.id })).error);
@@ -71,25 +72,45 @@ async function main() {
     check("opening the chat hires nobody", ((await admin.from("campaign_creators").select("id").eq("campaign_id", K)).data?.length ?? 0) === 0);
     const card0 = ok(await c1.c.rpc("get_negotiation", { p_conversation: conv }), "negotiation") as { state: string; campaign: { title: string } };
     check("creator sees the pinned brief card", card0.state === "open" && card0.campaign.title === "Hiring flow test brief");
-    check("final proposal needs agreed terms first", !!(await c1.c.rpc("send_final_proposal", { p_conversation: conv, p_note: null })).error);
+    check("no hire without an accepted offer", !!(await brand.c.rpc("hire_creator", { p_proposal: conv })).error);
     const o1 = ok(await brand.c.rpc("send_offer", { p_conversation: conv, p_price: 900, p_terms: terms }), "offer") as string;
     const o2 = ok(await c1.c.rpc("send_offer", { p_conversation: conv, p_price: 1300, p_terms: terms }), "counter") as string;
     check("countered offer can no longer be accepted", !!(await c1.c.rpc("accept_offer", { p_message: o1 })).error);
     check("you can't accept your own offer", !!(await c1.c.rpc("accept_offer", { p_message: o2 })).error);
     check("outsiders can't read the negotiation", ((await c2.c.from("messages").select("id").eq("conversation_id", conv)).data?.length ?? 0) === 0);
-    ok(await brand.c.rpc("accept_offer", { p_message: o2 }), "accept counter");
-    check("terms agreed", (ok(await brand.c.rpc("get_negotiation", { p_conversation: conv }), "neg") as { state: string }).state === "agreed");
-    check("only the creator sends the final proposal", !!(await brand.c.rpc("send_final_proposal", { p_conversation: conv, p_note: null })).error);
-    const p1 = ok(await c1.c.rpc("send_final_proposal", { p_conversation: conv, p_note: "Ready to start" }), "final proposal") as string;
-    check("creator can't accept their own proposal", !!(await c1.c.rpc("hire_creator", { p_proposal: p1 })).error);
-    const project1 = ok(await brand.c.rpc("hire_creator", { p_proposal: p1 }), "accept & hire") as string;
+    const p1 = ok(await brand.c.rpc("accept_offer", { p_message: o2 }), "accept counter") as string;
+    const n1 = ok(await brand.c.rpc("get_negotiation", { p_conversation: conv }), "neg") as { state: string; proposal: { id: string; status: string; terms: Record<string, unknown> } };
+    check("accepting the creator's price is the agreement (Hire available at once)", n1.state === "agreed" && n1.proposal.id === p1 && n1.proposal.status === "accepted");
+    check("agreed terms carry no 'revisions'", !("revisions" in n1.proposal.terms));
+    check("the final-proposal step is gone", !!(await c1.c.rpc("send_final_proposal" as never, { p_conversation: conv, p_note: null } as never)).error);
+    check("creator can't hire themselves", !!(await c1.c.rpc("hire_creator", { p_proposal: p1 })).error);
+    const project1 = ok(await brand.c.rpc("hire_creator", { p_proposal: p1 }), "hire") as string;
     const row = (await admin.from("campaign_creators").select("status, agreed_amount").eq("id", project1).single()).data;
     const esc = (await admin.from("escrow_payments").select("status, amount").eq("campaign_creator_id", project1).single()).data;
-    check("hired at the final proposal's price", row?.status === "hired" && row.agreed_amount === 1300, JSON.stringify(row));
-    check("demo escrow opened unfunded at that price", esc?.status === "unfunded" && esc.amount === 1300, JSON.stringify(esc));
-    const notes = (await c1.c.from("notifications").select("type, data").eq("type", "proposal")).data ?? [];
-    check("creator notified at each step", ["negotiation_opened", "offer", "offer_accepted", "proposal_accepted"].every((e) => notes.some((n) => (n.data as { event: string }).event === e)),
-      notes.map((n) => (n.data as { event: string }).event).join(","));
+    check("Hire → awaiting funding at the agreed price", row?.status === "awaiting_funding" && row.agreed_amount === 1300, JSON.stringify(row));
+    check("demo escrow pending at that price", esc?.status === "unfunded" && esc.amount === 1300, JSON.stringify(esc));
+    const blocked = await c1.c.rpc("create_submission", { p_project: project1 });
+    check("unfunded hire: creator can't submit (API)", !!blocked.error && /awaiting funding/.test(blocked.error.message), blocked.error?.message);
+    check("unfunded hire: brand can't assign tasks (API)", !!(await brand.c.rpc("create_campaign_task", { p_campaign: K, p_title: "Too early", p_description: null, p_due_date: null, p_assignee: c1.id })).error);
+    check("unfunded hire isn't a collaborator", (ok(await brand.c.rpc("get_campaign", { p_id: K }), "card") as { stats: { selected: number } }).stats.selected === 0);
+    check("brand is reminded to fund", ((await brand.c.from("notifications").select("id").eq("type", "project").eq("entity_id", project1)).data ?? []).length >= 1);
+    check("creator can't fund", !!(await c1.c.rpc("fund_escrow", { p_project: project1 })).error);
+    ok(await brand.c.rpc("fund_escrow", { p_project: project1 }), "fund");
+    check("Fund project → in progress, escrow funded", (await admin.from("campaign_creators").select("status").eq("id", project1).single()).data?.status === "in_progress"
+      && (await admin.from("escrow_payments").select("status").eq("campaign_creator_id", project1).single()).data?.status === "funded");
+    check("creator unblocked: can create a submission", !(await c1.c.rpc("create_submission", { p_project: project1 })).error);
+    const notes = (await c1.c.from("notifications").select("type, data").in("type", ["proposal", "project", "payment"])).data ?? [];
+    const events = notes.map((n) => (n.data as { event: string }).event);
+    check("creator notified at each step", ["negotiation_opened", "offer", "offer_accepted", "awaiting_funding", "funded", "in_progress"].every((e) => events.includes(e)), events.join(","));
+
+    console.log("\n▸ A counter-offer after acceptance voids the agreement");
+    const cv7 = ok(await brand.c.rpc("start_negotiation", { p_campaign: K, p_creator: creators[6].id }), "negotiate 7") as string;
+    const o7 = ok(await brand.c.rpc("send_offer", { p_conversation: cv7, p_price: 500, p_terms: terms }), "offer 7") as string;
+    const p7 = ok(await creators[6].c.rpc("accept_offer", { p_message: o7 }), "accept 7") as string;
+    check("creator accepting the brand's offer → brand told to hire", ((await brand.c.from("notifications").select("data").eq("type", "proposal")).data ?? []).some((n) => (n.data as { event: string; proposal_id?: string }).event === "offer_accepted_hire" && (n.data as { proposal_id?: string }).proposal_id === p7));
+    ok(await creators[6].c.rpc("send_offer", { p_conversation: cv7, p_price: 650, p_terms: terms }), "counter 7");
+    check("the new offer voids the agreement", !!(await brand.c.rpc("hire_creator", { p_proposal: p7 })).error);
+    check("back to negotiating", (ok(await brand.c.rpc("get_negotiation", { p_conversation: cv7 }), "neg 7") as { state: string }).state === "negotiating");
     const apps = ok(await brand.c.rpc("get_campaign_applications", { p_campaign: K }), "applications");
     check("applications read model still works", Array.isArray(apps));
 
@@ -97,9 +118,10 @@ async function main() {
     const hire = async (s: Session, price: number) => {
       const cv = ok(await brand.c.rpc("start_negotiation", { p_campaign: K, p_creator: s.id }), "negotiate") as string;
       const off = ok(await s.c.rpc("send_offer", { p_conversation: cv, p_price: price, p_terms: terms }), "offer") as string;
-      ok(await brand.c.rpc("accept_offer", { p_message: off }), "accept");
-      const pr = ok(await s.c.rpc("send_final_proposal", { p_conversation: cv, p_note: null }), "proposal") as string;
-      return ok(await brand.c.rpc("hire_creator", { p_proposal: pr }), "hire") as string;
+      const pr = ok(await brand.c.rpc("accept_offer", { p_message: off }), "accept") as string;
+      const pj = ok(await brand.c.rpc("hire_creator", { p_proposal: pr }), "hire") as string;
+      ok(await brand.c.rpc("fund_escrow", { p_project: pj }), "fund");
+      return pj;
     };
     const groups = async () => (await admin.from("conversations").select("id").eq("campaign_id", K).eq("type", "group")).data ?? [];
     check("no group chat with one collaborator", (await groups()).length === 0);
@@ -119,7 +141,8 @@ async function main() {
     const lower = await brand.c.from("campaigns").update({ creators_needed: 3 }).eq("id", K);
     check("target can't drop below the 6 hired", !!lower.error);
     check("target can be raised any time", !(await brand.c.from("campaigns").update({ creators_needed: 10 }).eq("id", K)).error);
-    ok(await brand.c.rpc("unhire_creator", { p_campaign: K, p_creator: creators[5].id }), "unhire");
+    const p6 = (await admin.from("campaign_creators").select("id").eq("campaign_id", K).eq("creator_id", creators[5].id).single()).data!.id as string;
+    ok(await brand.c.rpc("cancel_project", { p_project: p6, p_reason: "Scope changed" }), "cancel");
     const after = (await admin.from("conversation_participants").select("user_id").eq("conversation_id", g[0].id)).data ?? [];
     check("removed creator leaves the group", after.length === 6 && !after.some((m) => m.user_id === creators[5].id));
 

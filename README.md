@@ -13,6 +13,48 @@ All data comes from Supabase and every action persists. New accounts start compl
 
 ## Recent changes
 
+### 2026-10-24: Accept → Hire → Fund, no revisions / invites, AI Creator Finder
+
+Migrations (rules enforced in RPCs, triggers and RLS), applied in two steps:
+- `0023_accept_hire_funding_ai_finder.sql` is the expand step. It is safe while the previous app is still serving: the old "final proposal" buttons get a "refresh the page" message.
+- `0024_accept_hire_funding_cleanup.sql` is the contract step, applied after the new app is live. It drops the legacy RPCs, strips stored "revisions", and quietly moves unfunded hires to `awaiting_funding`.
+- Rollback: `supabase/rollback/0023_0024_down.sql` (generated from the 0022 schema). It keeps every project, payment, proposal and message, and drops only the AI Finder tables.
+
+**Accepted offer = agreement → Hire.**
+- When one side accepts the other's latest offer, the server records an accepted, versioned proposal from it.
+- The brand immediately gets a primary **Hire** button in the chat, on the pinned card and on the accepted offer.
+- The "creator sends a final proposal" step is gone (`send_final_proposal` and `reject_proposal` were removed).
+- A new offer after acceptance voids the agreement.
+- `hire_creator(p_proposal)` still requires an accepted agreement and takes the price from it.
+
+**Hire → Fund project.**
+- A hire starts as `awaiting_funding`, and the brand lands on **Fund project**, a simulated payment sheet labelled "Demo, no real money" that funds the existing demo escrow (`unfunded` → `funded`, shown as "Pending funding").
+- Until it's funded, the creator sees "Waiting for the brand to fund" and can't start or submit. The brand can't assign tasks, and the creator isn't counted as a collaborator or added to the group chat.
+- This is enforced by `create_submission`, a `submissions` insert trigger, `create_campaign_task`, `is_campaign_collaborator`, `campaign_stats` and `sync_campaign_group`.
+- Funding moves the project to `in_progress`, notifies the creator, and makes them a collaborator; the group chat rule for 2+ creators still applies.
+- The brand gets a notification plus a persistent banner, sees the hire under "Awaiting funding" in the collaborators panel, and can **Cancel hire** (nothing was paid, so there is no refund).
+- The rest is unchanged: submission → review → approval → release → clean download → certificate.
+- Existing hires that were never funded move to `awaiting_funding` (0024). They also leave the campaign group chat quietly until funded.
+
+**Removed.**
+- "Revisions" is gone from offer terms (form, cards, validation, stored terms). Creative Review's **Request revision** is untouched.
+- **Invite** is gone (`invite_creator` RPC, the Studio button, the service). Message and Shortlist cover it, and old invite notifications now read "shared the brief with you".
+
+**AI Creator Finder** (brand Discover page, "Find with AI").
+1. Gemini extracts requirements from the idea, using the brief builder's lookup vocabulary.
+2. The idea is embedded (`gemini-embedding-2`, 768 dimensions).
+3. `run_ai_match` ranks **all** available creators in SQL: semantic similarity (pgvector) + tools/skills/style/content type/specialization overlap + experience and completed projects + availability. Weights live in `src/config/ai-match.ts`.
+4. The top results are stored and paginated. The 0-100 **Match score** is relevance, not a talent rating.
+
+More details:
+- **Why this creator?** is generated only on click, from that creator's real evidence (`ai_match_evidence`), and cached in `ai_match_reasons`.
+- **Embeddings:** creators get vectors in `creator_embeddings`, never exposed to clients. Profile, attribute and portfolio changes mark them stale through triggers. Stale ones are re-embedded in the background after searches and creator saves (`/api/ai/embeddings`); backfill with `npm run ai:embeddings`.
+- **Fallbacks:** if parsing or embeddings fail, ranking falls back to tags and keywords with a notice.
+- **Limits and history:** searches are persisted (`ai_match_searches`, `ai_match_results`, with Save per result), reopenable as recent searches, and rate-limited per brand in the database (15 per 10 minutes). Jobs are logged in `ai_job_logs`.
+- **Config:** `GEMINI_API_KEY`, already used. **`AI_FINDER_SEND_CREATOR_DATA=true`** is required before any creator profile or portfolio text is sent to Gemini (embeddings, "Why this creator?"). Off by default: the finder still works, ranked by tags and keywords. `GEMINI_EMBEDDING_MODEL` is optional (default `gemini-embedding-2`; creator vectors always use this one model, and queries fall back to `gemini-embedding-001`). The pgvector extension is enabled by the migration.
+
+New: tables `creator_embeddings`, `ai_match_searches`, `ai_match_results`, `ai_match_reasons`; routes `/api/ai/match`, `/api/ai/match/[searchId]/reason`, `/api/ai/embeddings`; components `discovery/ai-finder.tsx`; scripts `npm run ai:embeddings`, `npm run test:ai-finder`.
+
 ### 2026-10-23: Negotiated hiring, published-only shortlists, creator targets, collaborators
 
 Migration: `supabase/migrations/0022_negotiated_hiring_collaborators.sql`. Every rule below is enforced in the database (RPCs, triggers, RLS), not only in the UI.
@@ -104,6 +146,8 @@ Copy `.env.example` to `.env.local` and fill it in. Never commit `.env.local`.
 | `SUPABASE_SECRET_KEY` | `/api/admin`, seed and test scripts | **Server only.** Imported only in `server-only` modules |
 | `SUPABASE_DB_URL` | `npm run db:migrate`, `db:types` | **Scripts only** (Dashboard → Connect → *Session pooler*) |
 | `GEMINI_API_KEY` | `/api/ai/brief` | **Server only**, optional |
+| `AI_FINDER_SEND_CREATOR_DATA` | AI Creator Finder, `npm run ai:embeddings` | **Server only.** `true` allows sending creator profile + portfolio text to Gemini. Default off |
+| `GEMINI_EMBEDDING_MODEL` | AI Creator Finder | Optional, default `gemini-embedding-2` |
 | `GEMINI_MODEL` | `/api/ai/brief` | Optional, default `gemini-3.5-flash` (falls back to 3.1-flash-lite → 3.5-flash-lite on retirement, overload or timeout) |
 | `SUPABASE_JWKS_URL`, `SITE_URL` | Reserved / docs | Optional |
 
@@ -111,10 +155,12 @@ Copy `.env.example` to `.env.local` and fill it in. Never commit `.env.local`.
 
 ```bash
 npm run db:migrate      # applies supabase/migrations/*.sql in order, once each
+npm run db:migrate -- --dry-run                                     # run pending migrations, then roll back
+npm run db:migrate -- --to 0023_accept_hire_funding_ai_finder.sql   # staged rollout: stop after this file
 npm run db:types        # optional: regenerates src/types/database.ts from the live schema
 ```
 
-Applied migrations are tracked in `private.schema_migrations`. Each file runs in its own transaction.
+Applied migrations are tracked in `private.schema_migrations`. Each file runs in its own transaction and waits at most 5 s for table locks, so it fails fast instead of blocking traffic.
 
 > Newer Supabase projects don't auto-grant table privileges to the API roles. `0011_api_grants.sql` sets them explicitly: clients read through RLS and write only specific tables and columns; the service role has full access.
 
@@ -160,7 +206,9 @@ npm run dev             # http://localhost:3000
 npm run typecheck && npm run lint && npm run build
 npm run test:rls        # permission + integrity checks against your Supabase project (needs seed)
 npm run test:workspace  # brand workspace acceptance flow against a running app (APP_URL, default localhost:3000)
-npm run test:hiring     # negotiated hiring, shortlist rule, creator targets, group chat + tasks (throwaway accounts)
+npm run test:hiring     # accept → hire → fund, shortlist rule, creator targets, group chat + tasks (throwaway accounts)
+npm run test:ai-finder  # AI Creator Finder routes, ranking, cached reasons, fallback, RLS (running app)
+npm run ai:embeddings   # build / refresh creator embeddings for the AI Creator Finder
 ```
 
 `test:workspace` uses throwaway accounts and deletes them afterwards. It covers:
@@ -213,7 +261,8 @@ Browser ──(publishable key + user JWT, RLS)──▶ Supabase Postgres / Sto
   - Postgres RLS on every table. Column-level grants stop users writing role, verification, suspension or counters.
   - Server checks in layouts and route handlers.
 - **Business logic lives in SQL.** Search, diagnostics, ranking, swipe deck, feed, opportunities, inbox, dashboards and admin lists are Postgres functions (`supabase/migrations/0006_rpcs.sql`, `0010_read_rpcs.sql`). They return ready-to-render JSON, and the scoring is transparent and inspectable.
-- **Hiring is a negotiation, enforced in SQL** (`0022_negotiated_hiring_collaborators.sql`). Offers, final proposals and the hire are security-definer RPCs that check who may act and when. Clients can't insert hires, proposals or structured messages, and the hire price always comes from the accepted proposal.
+- **Hiring is a negotiation, enforced in SQL** (`0022`, `0023`). Offers, the agreement (an accepted offer becomes an accepted proposal) and the hire are security-definer RPCs that check who may act and when. Clients can't insert hires, proposals or structured messages, and the hire price always comes from the agreement. A hire waits in `awaiting_funding` until the brand funds the demo escrow.
+- **AI Creator Finder:** `/api/ai/match` → Gemini (requirements) + embedding → `run_ai_match` (SQL over pgvector + tags) → stored, paginated results. Reasons are generated lazily and cached. Creator vectors are refreshed by triggers plus background jobs.
 - **Conversations** are a plain DM per pair (`dm_key "a:b"`), one 1:1 chat per brief and pair for hiring (`dm_key "c:campaign:a:b"`), and one group per brief (`type = 'group'`). Project updates for a hire are posted in its brief chat. Group membership follows `campaign_creators` through a trigger.
 - **Counts and notifications are triggers** (`0005_functions_triggers.sql`). They're never computed or stored by the client.
 - **Data access** goes through `src/services/*`, one file per domain. Components never query directly. The same service functions run with the browser client (TanStack Query) or the server client.
@@ -229,7 +278,10 @@ Browser ──(publishable key + user JWT, RLS)──▶ Supabase Postgres / Sto
 | Change brief fields | `0003_campaigns.sql` → `src/lib/validation/schemas.ts` (`campaignSchema`) → `src/components/campaign/campaign-form.tsx` |
 | Change the AI brief prompt or schema | `src/lib/ai/brief-builder.ts` |
 | Add a notification type | `0004` check constraint (latest version in `0022`) + trigger in `0005` + text and links in `src/services/notifications.ts` |
-| Change the hiring negotiation (offer terms, who may act, states) | RPCs in `0022_negotiated_hiring_collaborators.sql` (`send_offer`, `accept_offer`, `send_final_proposal`, `hire_creator`, `private.clean_terms`) → `src/services/messaging.ts` → `src/components/chat/negotiation.tsx` |
+| Change the hiring negotiation (offer terms, who may act, states) | Latest RPC versions in `0023_accept_hire_funding_ai_finder.sql` (`send_offer`, `accept_offer`, `hire_creator`, `private.clean_terms`) → `src/services/messaging.ts` → `src/components/chat/negotiation.tsx` |
+| Funding rules (what's blocked until funded) | `fund_escrow`, `is_campaign_collaborator`, `tg_submissions_require_funding` in `0023`; UI in `workspace/payment-card.tsx` ("Fund project") and `project-view.tsx` |
+| AI Creator Finder weights / limits | `src/config/ai-match.ts` (weights, semantic calibration, page size, rate limits, embedding model) |
+| AI Creator Finder logic | `run_ai_match` / `ai_match_evidence` in `0023`, `src/lib/ai/creator-finder.ts` (requirements, reasons), `src/lib/ai/embeddings.ts`, `src/components/discovery/ai-finder.tsx` |
 | Change who can shortlist / the creator target rules | Triggers `shortlists_require_published` and `campaigns_target_floor` in `0022`; UI gate in `src/components/campaign/shortlist-gate.tsx` |
 | Group chats, collaborators, tasks | `private.sync_campaign_group`, `get_campaign_collaborators`, `*_campaign_task*` RPCs in `0022` → `src/services/workspace.ts` → `src/components/workspace/collaborators.tsx` |
 | Number inputs with − / + | `src/components/ui/stepper.tsx` |

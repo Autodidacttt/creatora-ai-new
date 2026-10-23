@@ -284,20 +284,19 @@ async function main() {
       check("hires can't be written directly (only through the workflow RPCs)", !!direct.error);
       const directHire = await brand.c.rpc("hire_creator", { p_campaign: draft.data!.id, p_creator: fresh.id, p_amount: 750 });
       check("direct hire with a client-supplied price is rejected", !!directHire.error && /Direct hiring is disabled/.test(directHire.error.message), directHire.error?.message);
-      // The only hire path: negotiate → agreed offer → creator's final proposal → brand accepts
+      // The only hire path: negotiate → one side accepts the other's offer (= agreement) → brand hires
       const conv = await brand.c.rpc("start_negotiation", { p_campaign: draft.data!.id, p_creator: fresh.id });
-      const terms = { deliverables: "2 reels", deadline: null, revisions: 1, usage_rights: ["organic_social"] };
+      const terms = { deliverables: "2 reels", deadline: null, usage_rights: ["organic_social"] };
       const offer = await brand.c.rpc("send_offer", { p_conversation: conv.data!, p_price: 750, p_terms: terms });
       check("an outsider can't accept the offer", !!(await maya.c.rpc("accept_offer", { p_message: offer.data! })).error);
-      await fresh.c.rpc("accept_offer", { p_message: offer.data! });
-      const proposal = await fresh.c.rpc("send_final_proposal", { p_conversation: conv.data!, p_note: null });
+      const proposal = await fresh.c.rpc("accept_offer", { p_message: offer.data! });
       check("other brands can't see the proposal", ((await atelier.c.from("proposals").select("id").eq("id", proposal.data!)).data?.length ?? 0) === 0);
       check("other brands can't accept it", !!(await atelier.c.rpc("hire_creator", { p_proposal: proposal.data! })).error);
       const hire = await brand.c.rpc("hire_creator", { p_proposal: proposal.data! });
       const career = (await fresh.c.rpc("dashboard_career", { p_creator: fresh.id, ...range })).data as { hired: number; earned_in_range: number } | null;
       check("a real hire changes the career figures (earnings only move on released payment)", !hire.error && career?.hired === 1 && career?.earned_in_range === 0, hire.error?.message);
       const hiredRow = await adminApi.from("campaign_creators").select("agreed_amount").eq("id", hire.data!).single();
-      check("the hire uses the final proposal's price", hiredRow.data?.agreed_amount === 750);
+      check("the hire uses the agreed price", hiredRow.data?.agreed_amount === 750);
     } finally {
       await adminApi.auth.admin.deleteUser(brandUser.data.user!.id);
     }

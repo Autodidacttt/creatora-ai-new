@@ -355,7 +355,7 @@ async function seedCampaigns() {
   // Every hire comes from an accepted final proposal (0022); the finished history gets its record here
   check(await supabase.from("proposals").upsert(selections.filter(([, , status]) => status === "completed").map(([c, cr, , amount]) => ({
     campaign_id: seedId(c), creator_id: uid(cr), version: 1, price: amount, currency: campaigns.find((x) => x.key === c)!.currency,
-    terms: { deliverables: "As described in the brief", deadline: null, revisions: 2, usage_rights: ["organic_social", "paid_social"] },
+    terms: { deliverables: "As described in the brief", deadline: null, usage_rights: ["organic_social", "paid_social"] },
     status: "accepted", sent_at: daysAgo(71), decided_at: daysAgo(70), created_at: daysAgo(71),
   })), { onConflict: "campaign_id,creator_id,version", ignoreDuplicates: true }), "accepted proposals for past hires");
 

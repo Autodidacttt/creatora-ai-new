@@ -107,22 +107,27 @@ async function main() {
     const card = (await maya.c.rpc("get_campaign", { p_id: campaignId })).data as Record<string, unknown> | null;
     check("studio inputs (source idea) are hidden from other users", !!card && !("source_idea" in card));
 
-    console.log("\n▸ Hire → negotiated in chat → final proposal accepted → escrow opened (test mode)");
+    console.log("\n▸ Hire → offer accepted in chat → hire → fund project (demo escrow)");
     const direct = await brand.c.from("campaign_creators").insert({ campaign_id: campaignId, creator_id: creator.id, status: "completed" } as never);
     check("hires can't be inserted directly", !!direct.error);
     const directHire = await brand.c.rpc("hire_creator", { p_campaign: campaignId, p_creator: creator.id, p_amount: 1200, p_currency: "USD" });
     check("direct hire (client-supplied price) is rejected", !!directHire.error);
     const conv = (await brand.c.rpc("start_negotiation", { p_campaign: campaignId, p_creator: creator.id })).data as string;
-    const offerTerms = { deliverables: "6 stills + 2 reels", deadline: null, revisions: 2, usage_rights: ["organic_social"] };
+    const offerTerms = { deliverables: "6 stills + 2 reels", deadline: null, usage_rights: ["organic_social"] };
     const offer = (await creator.c.rpc("send_offer", { p_conversation: conv, p_price: 1200, p_terms: offerTerms })).data as string;
-    check("brand accepts the creator's offer", !(await brand.c.rpc("accept_offer", { p_message: offer })).error);
-    const proposal = await creator.c.rpc("send_final_proposal", { p_conversation: conv, p_note: "Ready" });
-    check("creator sends the final proposal", !proposal.error, proposal.error?.message);
-    const hire = await brand.c.rpc("hire_creator", { p_proposal: proposal.data as string });
-    check("brand accepts & hires", !hire.error && !!hire.data, hire.error?.message);
+    const agreement = await brand.c.rpc("accept_offer", { p_message: offer });
+    check("brand accepts the creator's price — that's the agreement", !agreement.error && !!agreement.data, agreement.error?.message);
+    const hire = await brand.c.rpc("hire_creator", { p_proposal: agreement.data as string });
+    check("brand hires at once from the agreement", !hire.error && !!hire.data, hire.error?.message);
     const projectId = hire.data as string;
     const esc = await creator.c.from("escrow_payments").select("status, amount, platform_fee").eq("campaign_creator_id", projectId).single();
-    check("creator sees the unfunded escrow", esc.data?.status === "unfunded" && esc.data.amount === 1200 && esc.data.platform_fee === 96);
+    check("creator sees the pending (unfunded) escrow", esc.data?.status === "unfunded" && esc.data.amount === 1200 && esc.data.platform_fee === 96);
+    const waiting = (await creator.c.from("campaign_creators").select("status").eq("id", projectId).single()).data;
+    check("hire waits for funding", waiting?.status === "awaiting_funding");
+    check("creator can't start work before funding", !!(await creator.c.rpc("create_submission", { p_project: projectId })).error);
+    const fund = await brand.c.rpc("fund_escrow", { p_project: projectId });
+    check("brand funds the project (demo)", !fund.error, fund.error?.message);
+    check("funded → in progress", (await creator.c.from("campaign_creators").select("status").eq("id", projectId).single()).data?.status === "in_progress");
 
     console.log("\n▸ Creator submits v1 (private upload → watermarked preview via API)");
     const s1 = (await creator.c.rpc("create_submission", { p_project: projectId })).data as string;
@@ -194,10 +199,8 @@ async function main() {
     const appr = await brand.c.rpc("review_submission", { p_submission: s2, p_decision: "approved" });
     check("brand approves v2", !appr.error, appr.error?.message);
 
-    console.log("\n▸ Fund → originals unlock → release → licence record");
-    check("release before funding is refused", (await api(`/api/projects/${projectId}/release`, { method: "POST", cookie: brand.cookie })).status === 400);
-    const fund = await brand.c.rpc("fund_escrow", { p_project: projectId });
-    check("brand funds escrow (test mode)", !fund.error, fund.error?.message);
+    console.log("\n▸ Approved + funded → originals unlock → release → licence record");
+    check("escrow is still held (funded) after approval", (await brand.c.from("escrow_payments").select("status").eq("campaign_creator_id", projectId).single()).data?.status === "funded");
     const orig = await brand.c.storage.from("submissions").createSignedUrl(f2.file.storage_path, 60);
     const origBuf = orig.data ? Buffer.from(await (await fetch(orig.data.signedUrl)).arrayBuffer()) : Buffer.alloc(0);
     check("approved + funded → brand downloads the clean original", !orig.error && sha(origBuf) === f2.file.sha256);
@@ -231,7 +234,8 @@ async function main() {
     check("another creator can't get the receipt", (await api(`/api/projects/${projectId}/receipt`, { cookie: maya.cookie })).status === 404);
     const notes = await creator.c.from("notifications").select("type, data").in("type", ["project", "payment"]);
     const events = new Set((notes.data ?? []).map((n) => (n.data as { event: string }).event));
-    check("creator was notified of every brand action", ["hired", "revision_requested", "approved", "funded", "released", "completed"].every((e) => events.has(e)), [...events].join(","));
+    // The hire itself arrives as 'awaiting_funding' ("Hired for … waiting for the brand to fund"), then 'in_progress' once funded
+    check("creator was notified of every brand action", ["awaiting_funding", "in_progress", "revision_requested", "approved", "funded", "released", "completed"].every((e) => events.has(e)), [...events].join(","));
     const brandNotes = await brand.c.from("notifications").select("data").eq("type", "project");
     check("brand was notified of submissions", (brandNotes.data ?? []).some((n) => (n.data as { event: string }).event === "submitted") && (brandNotes.data ?? []).some((n) => (n.data as { event: string }).event === "resubmitted"));
     const sys = await creator.c.from("messages").select("body").eq("kind", "system");

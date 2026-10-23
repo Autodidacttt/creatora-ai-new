@@ -151,7 +151,7 @@ async function projectId(ctx: WorkspaceCtx, campaignKeyOrId: string, creator: st
   return data as { id: string; status: string; hired_at: string | null } | null;
 }
 
-/** Hires through the only path there is (0022): negotiate in chat → creator's final proposal → brand accepts. */
+/** Hires through the only path there is: negotiate in chat → creator accepts the offer (= agreement) → brand hires → brand funds. */
 async function ensureHired(ctx: WorkspaceCtx, brand: string, campaign: string, creator: string, amount: number, _currency: string, fund: boolean) {
   const b = await as(ctx, brand);
   const p = await projectId(ctx, campaign, creator);
@@ -159,11 +159,10 @@ async function ensureHired(ctx: WorkspaceCtx, brand: string, campaign: string, c
   if (!p?.hired_at || !escrow) {
     const c = await as(ctx, creator);
     const conv = check(await b.rpc("start_negotiation", { p_campaign: ctx.seedId(campaign), p_creator: ctx.uid(creator) }), `negotiate ${creator}`);
-    const terms = { deliverables: "As described in the brief", deadline: null, revisions: 2, usage_rights: ["organic_social", "paid_social"] };
+    const terms = { deliverables: "As described in the brief", deadline: null, usage_rights: ["organic_social", "paid_social"] };
     const offer = check(await b.rpc("send_offer", { p_conversation: conv, p_price: amount, p_terms: terms }), `offer ${creator}`);
-    check(await c.rpc("accept_offer", { p_message: offer }), `accept offer ${creator}`);
-    const proposal = check(await c.rpc("send_final_proposal", { p_conversation: conv, p_note: null }), `final proposal ${creator}`);
-    check(await b.rpc("hire_creator", { p_proposal: proposal }), `hire ${creator}`);
+    const agreement = check(await c.rpc("accept_offer", { p_message: offer }), `accept offer ${creator}`);
+    check(await b.rpc("hire_creator", { p_proposal: agreement }), `hire ${creator}`);
   }
   const proj = (await projectId(ctx, campaign, creator))!;
   if (fund) {
