@@ -1,6 +1,7 @@
 import type { MiniProfile, PostCard } from "@/types/app";
 import type { PostInput } from "@/lib/validation/schemas";
 import { as, type DB, requireUserId, unwrap } from "./_db";
+import { pingEmbeddingRefresh } from "./ai-match";
 
 export interface Page<T> {
   items: T[];
@@ -66,6 +67,7 @@ export async function createPost(db: DB, values: PostValues, toolIds: number[]):
   if (toolIds.length) {
     unwrap(await db.from("post_tools").insert(toolIds.map((tool_id) => ({ post_id: post.id, tool_id }))));
   }
+  pingEmbeddingRefresh(); // portfolio changed: refresh the creator's AI Finder embedding
   return post.id;
 }
 
@@ -75,10 +77,12 @@ export async function updatePost(db: DB, id: string, values: PostValues, toolIds
   if (toolIds.length) {
     unwrap(await db.from("post_tools").insert(toolIds.map((tool_id) => ({ post_id: id, tool_id }))));
   }
+  pingEmbeddingRefresh();
 }
 
 export async function deletePost(db: DB, id: string) {
   unwrap(await db.from("posts").delete().eq("id", id));
+  pingEmbeddingRefresh();
 }
 
 export interface Comment {

@@ -12,10 +12,12 @@ import { ContactButton, FollowButton } from "@/components/posts/actions";
 import { cn, compact } from "@/lib/utils";
 
 /** Search / ranking result card: preview strip, tools (matched ones highlighted), quick actions. */
-export function CreatorResultCard({ creator, highlightTools = [], score, reasons, footer, compactActions }: {
+export function CreatorResultCard({ creator, highlightTools = [], score, scoreLabel = "relevance", scoreTitle = "Relevance to this brief — not a measure of talent", reasons, footer, compactActions }: {
   creator: Creator;
   highlightTools?: number[];
   score?: number;
+  scoreLabel?: string;
+  scoreTitle?: string;
   reasons?: string[];
   footer?: ReactNode;
   compactActions?: boolean;
@@ -39,9 +41,9 @@ export function CreatorResultCard({ creator, highlightTools = [], score, reasons
         <div className="-mt-10 flex items-end justify-between">
           <Avatar src={creator.avatar_url} name={creator.display_name} size="lg" verified={creator.is_verified} className="[&>img]:ring-4 [&>span:first-child]:ring-4" />
           {score !== undefined && (
-            <div className="rounded-2xl bg-card px-3 py-1.5 text-right shadow-sm" title="Relevance to this brief — not a measure of talent">
+            <div className="rounded-2xl bg-card px-3 py-1.5 text-right shadow-sm" title={scoreTitle}>
               <span className="display text-xl tabular-nums">{score}</span>
-              <span className="block text-[9px] uppercase tracking-wider text-ink-3">relevance</span>
+              <span className="block text-[9px] uppercase tracking-wider text-ink-3">{scoreLabel}</span>
             </div>
           )}
         </div>

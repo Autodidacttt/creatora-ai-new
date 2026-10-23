@@ -5,13 +5,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Layers, Search, X } from "lucide-react";
 import Link from "next/link";
-import { useDb } from "@/features/session";
+import { useDb, useMe } from "@/features/session";
 import { useLookups } from "@/hooks/use-lookups";
 import { useDebounced } from "@/hooks/use-debounce";
 import { filtersFromParams, filtersToParams, searchCreators, type CreatorFilters } from "@/services/discovery";
 import { FilterPanel } from "@/components/discovery/filter-panel";
 import { EmptyResults } from "@/components/discovery/empty-results";
 import { CreatorResultCard } from "@/components/discovery/creator-card";
+import { AiFinder } from "@/components/discovery/ai-finder";
 import { ErrorState, Skeleton } from "@/components/ui/states";
 import { InfiniteSentinel } from "@/components/ui/misc";
 import { Select } from "@/components/ui/field";
@@ -19,6 +20,7 @@ import { buttonVariants } from "@/components/ui/button";
 
 export default function DiscoverPage() {
   const db = useDb();
+  const me = useMe();
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -62,6 +64,9 @@ export default function DiscoverPage() {
         </div>
         <Link href="/swipe" className={buttonVariants({ variant: "glass" })}><Layers /> Swipe mode</Link>
       </div>
+
+      {/* Brands: AI Creator Finder above the classic filters */}
+      {me.role === "brand" && <AiFinder />}
 
       <div className="glass sticky top-[4.5rem] z-20 space-y-3 rounded-[2rem] p-3 sm:p-4">
         <div className="flex flex-col gap-2 sm:flex-row">

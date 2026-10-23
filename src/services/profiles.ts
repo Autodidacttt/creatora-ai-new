@@ -1,6 +1,7 @@
 import type { FullProfile, MiniProfile, SessionProfile } from "@/types/app";
 import type { CreatorAttributes } from "@/lib/validation/schemas";
 import { as, type DB, requireUserId, ServiceError, unwrap, unwrapMaybe } from "./_db";
+import { pingEmbeddingRefresh } from "./ai-match";
 
 export async function getSessionProfile(db: DB, userId: string): Promise<SessionProfile | null> {
   const res = await db
@@ -35,6 +36,7 @@ export async function updateProfile(
   const res = await db.from("profiles").update(values).eq("id", id).select("id").single();
   if (res.error?.code === "23505") throw new ServiceError("That username is taken.");
   unwrap(res);
+  pingEmbeddingRefresh();
 }
 
 export async function updateCreatorDetails(
@@ -51,6 +53,7 @@ export async function updateCreatorDetails(
 ) {
   const id = await requireUserId(db);
   unwrap(await db.from("creator_details").update(values).eq("profile_id", id));
+  pingEmbeddingRefresh(); // profile changed: refresh the creator's AI Finder embedding
 }
 
 export async function updateBrandDetails(
@@ -82,6 +85,7 @@ export async function setCreatorAttributes(db: DB, attrs: CreatorAttributes) {
       unwrap(await db.from(table as "creator_skills").upsert(rows as never, { onConflict: `creator_id,${col}` }));
     }
   }
+  pingEmbeddingRefresh();
 }
 
 export async function addExperience(
