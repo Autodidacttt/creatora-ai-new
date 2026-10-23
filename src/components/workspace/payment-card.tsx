@@ -111,7 +111,7 @@ export function PaymentCard({ project, payments, role, onChanged, onSetAmount }:
 
       <div className="flex flex-wrap gap-2">
         {role === "brand" && !e && project.hired_at && onSetAmount && (
-          <Button variant="primary" onClick={onSetAmount}><Wallet /> Set amount & open escrow</Button>
+          <Button variant="primary" onClick={onSetAmount} title="Agree the fee in chat; accepting the final proposal opens escrow"><Wallet /> Agree the fee in chat</Button>
         )}
         {role === "brand" && e?.status === "unfunded" && !["rejected", "cancelled", "completed"].includes(s) && (
           <Button variant="primary" loading={busy === "fund"} onClick={() => setDialog("fund")}><Lock /> Fund escrow</Button>

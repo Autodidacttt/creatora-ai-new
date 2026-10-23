@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckSquare, Columns3, ExternalLink, FileSearch, Square, Star, StarOff, UserCheck, Users, X } from "lucide-react";
+import { CheckSquare, Columns3, ExternalLink, FileSearch, Square, Star, StarOff, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import type { HiringCandidate } from "@/types/workspace";
 import { useDb } from "@/features/session";
@@ -19,13 +19,14 @@ import { EmptyState, ErrorState, Skeleton } from "@/components/ui/states";
 import { cn, compact, errorMessage, timeAgo } from "@/lib/utils";
 import { formatMoney } from "@/lib/money";
 import { Countdown } from "./countdown";
-import { HireDialog } from "./hire-dialog";
+import { HireButton } from "./hire-button";
+import { canShortlist, SHORTLIST_LOCKED_HINT, ShortlistGate } from "@/components/campaign/shortlist-gate";
 import { MediaThumb, useSignedPreviews } from "./media";
 import { EscrowChip, ProjectStatusChip, SubmissionStatusChip } from "./status";
 
 function CandidateCard({ c, campaign, urls, picked, onPick, onChanged }: {
   c: HiringCandidate;
-  campaign: { id: string; currency: string; budget_min: number | null };
+  campaign: { id: string; currency: string; budget_min: number | null; status: string };
   urls: Record<string, string> | undefined;
   picked: boolean | null;
   onPick: () => void;
@@ -33,7 +34,6 @@ function CandidateCard({ c, campaign, urls, picked, onPick, onChanged }: {
 }) {
   const db = useDb();
   const [busy, setBusy] = useState<string | null>(null);
-  const [hireOpen, setHireOpen] = useState(false);
   const p = c.project;
   const hired = !!p?.hired_at;
   const closed = p && ["rejected", "cancelled", "completed"].includes(p.status);
@@ -94,10 +94,12 @@ function CandidateCard({ c, campaign, urls, picked, onPick, onChanged }: {
       {p?.escrow && <div className="flex items-center gap-2 text-xs"><EscrowChip status={p.escrow.status} /><span className="tabular-nums">{formatMoney(p.escrow.amount, p.escrow.currency)}</span></div>}
 
       <div className="mt-auto flex flex-wrap gap-1.5 border-t border-line pt-3">
-        {!hired && !closed && <Button size="sm" variant="primary" onClick={() => setHireOpen(true)}><UserCheck /> Hire</Button>}
+        {/* Hire opens the negotiation chat; the hire happens when the brand accepts the final proposal there */}
+        {!hired && !closed && <HireButton campaignId={campaign.id} creatorId={c.creator.id} />}
         {hired && <Link href={`/brand/campaigns/projects/${p!.id}`} className={buttonVariants({ size: "sm", variant: "dark" })}><ExternalLink /> Project</Link>}
         {!hired && (
-          <Button size="sm" variant="secondary" loading={busy === "s"} onClick={() => run("s", () => setShortlisted(db, campaign.id, c.creator.id, !c.shortlisted), c.shortlisted ? "Removed from shortlist" : "Shortlisted")}>
+          <Button size="sm" variant="secondary" loading={busy === "s"} onClick={() => run("s", () => setShortlisted(db, campaign.id, c.creator.id, !c.shortlisted), c.shortlisted ? "Removed from shortlist" : "Shortlisted")}
+            disabled={!c.shortlisted && !canShortlist(campaign.status)} title={!c.shortlisted && !canShortlist(campaign.status) ? SHORTLIST_LOCKED_HINT : undefined}>
             {c.shortlisted ? <StarOff /> : <Star />} {c.shortlisted ? "Unshortlist" : "Shortlist"}
           </Button>
         )}
@@ -106,8 +108,6 @@ function CandidateCard({ c, campaign, urls, picked, onPick, onChanged }: {
         )}
         <ContactButton profileId={c.creator.id} size="sm" label="Message" />
       </div>
-      <HireDialog open={hireOpen} onOpenChange={setHireOpen} campaignId={campaign.id} creator={c.creator}
-        suggestedAmount={c.application?.proposed_rate ?? campaign.budget_min} currency={campaign.currency} onHired={onChanged} />
     </article>
   );
 }
@@ -187,6 +187,7 @@ export function HiringBoard({ campaignId, onCampaign }: { campaignId: string | n
         ) : <Button size="sm" variant="ghost" onClick={() => setPick([])}><Columns3 /> Compare creators</Button>}
       </div>
 
+      <ShortlistGate campaign={current} onPublished={() => { refresh(); board.refetch(); }} />
       {board.isPending && <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-72 rounded-[1.75rem]" />)}</div>}
       {board.isError && <ErrorState error={board.error} onRetry={() => board.refetch()} />}
       {board.isSuccess && board.data.length === 0 && (

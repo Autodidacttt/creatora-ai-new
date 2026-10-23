@@ -97,6 +97,8 @@ async function main() {
   section("VIEW");
   out.push("    };");
   out.push("    Functions: {");
+  // Overloaded functions (same name, different arguments) become a union, as supabase-js expects
+  const signatures = new Map<string, string[]>();
   for (const f of fns) {
     const inArgs: string[] = [];
     const outCols: string[] = [];
@@ -114,8 +116,10 @@ async function main() {
     const ret = outCols.length
       ? `{ ${outCols.join("; ")} }[]`
       : `${tsType(f.rettype)}${f.proretset ? "[]" : ""}`;
-    out.push(`      ${f.proname}: { Args: ${inArgs.length ? `{ ${inArgs.join("; ")} }` : "Record<PropertyKey, never>"}; Returns: ${ret} };`);
+    const sig = `{ Args: ${inArgs.length ? `{ ${inArgs.join("; ")} }` : "Record<PropertyKey, never>"}; Returns: ${ret} }`;
+    signatures.set(f.proname, [...(signatures.get(f.proname) ?? []), sig]);
   }
+  for (const [name, sigs] of signatures) out.push(`      ${name}: ${sigs.join(" | ")};`);
   out.push("    };");
   out.push("    Enums: { [_ in never]: never };");
   out.push("    CompositeTypes: { [_ in never]: never };");

@@ -233,8 +233,35 @@ export interface InboxItem {
   last_message_preview: string | null;
   last_sender_id: string | null;
   unread_count: number;
-  other: MiniProfile & { role: Role };
+  /** For a group chat this is the brief (role "group"), not a person */
+  other: MiniProfile & { role: Role | "group" };
   total_count: number;
+  conversation_type: "direct" | "group";
+  campaign: { id: string; title: string; status: string } | null;
+}
+
+export interface ConversationInfo {
+  id: string;
+  type: "direct" | "group";
+  campaign: { id: string; title: string; status: string; brand_id: string } | null;
+  members: (MiniProfile & { role: Role })[];
+}
+
+export type NegotiationState = "open" | "negotiating" | "agreed" | "proposal_sent" | "hired";
+
+export interface Negotiation {
+  state: NegotiationState;
+  brand_id: string;
+  creator_id: string;
+  campaign: {
+    id: string; title: string; status: string; description: string; deliverables: string | null;
+    budget_min: number | null; budget_max: number | null; currency: string; deadline: string | null;
+    usage_rights: string[]; creators_needed: number; is_sprint: boolean;
+  };
+  application: { proposed_rate: number | null; status: string } | null;
+  latest_offer: (MessagePayload & { message_id: string; sender_id: string }) | null;
+  proposal: { id: string; version: number; status: string; price: number; currency: string; terms: OfferTerms; note: string | null; sent_at: string | null } | null;
+  project: { id: string; status: string } | null;
 }
 
 export interface Message {
@@ -243,15 +270,43 @@ export interface Message {
   sender_id: string;
   body: string;
   created_at: string;
-  /** "system" = automatic project/payment update posted by the platform */
-  kind?: "user" | "system";
+  /**
+   * The message type: "user" = plain text; "system" = automatic update posted by the platform;
+   * "offer" / "proposal" / "task" = structured cards whose data is in payload (written only by RPCs).
+   */
+  kind?: "user" | "system" | "offer" | "proposal" | "task";
+  payload?: MessagePayload | null;
   pending?: boolean;
+}
+
+export interface OfferTerms {
+  deliverables: string;
+  deadline: string | null;
+  revisions: number;
+  usage_rights: string[];
+}
+
+export interface MessagePayload {
+  /** offer / proposal */
+  price?: number;
+  currency?: string;
+  terms?: OfferTerms;
+  status?: string;
+  by?: "brand" | "creator";
+  proposal_id?: string;
+  version?: number;
+  note?: string | null;
+  /** task */
+  task_id?: string;
+  title?: string;
+  due_date?: string | null;
+  scope?: "individual" | "group";
 }
 
 export interface NotificationItem {
   id: string;
   type: "follow" | "like" | "comment" | "application" | "shortlisted" | "selected" | "message" | "verification"
-    | "project" | "payment" | "opportunity";
+    | "project" | "payment" | "opportunity" | "proposal" | "task";
   entity_type: string | null;
   entity_id: string | null;
   data: Record<string, string | number | boolean | null | undefined | string[]>;

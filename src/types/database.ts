@@ -66,15 +66,21 @@ export type Database = {
         Relationships: [];
       };
       campaign_shortlists: {
-        Row: { campaign_id: string; creator_id: string; added_by: string; note: string | null; created_at: string };
-        Insert: { campaign_id: string; creator_id: string; added_by: string; note?: string | null; created_at?: string };
-        Update: { campaign_id?: string; creator_id?: string; added_by?: string; note?: string | null; created_at?: string };
+        Row: { campaign_id: string; creator_id: string; added_by: string; note: string | null; created_at: string; added_while_draft: boolean };
+        Insert: { campaign_id: string; creator_id: string; added_by: string; note?: string | null; created_at?: string; added_while_draft?: boolean };
+        Update: { campaign_id?: string; creator_id?: string; added_by?: string; note?: string | null; created_at?: string; added_while_draft?: boolean };
         Relationships: [];
       };
       campaign_skills: {
         Row: { campaign_id: string; skill_id: number };
         Insert: { campaign_id: string; skill_id: number };
         Update: { campaign_id?: string; skill_id?: number };
+        Relationships: [];
+      };
+      campaign_tasks: {
+        Row: { id: string; campaign_id: string; title: string; description: string | null; due_date: string | null; scope: string; assigned_to: string | null; status: string; created_by: string; created_at: string; updated_at: string };
+        Insert: { id?: string; campaign_id: string; title: string; description?: string | null; due_date?: string | null; scope: string; assigned_to?: string | null; status?: string; created_by: string; created_at?: string; updated_at?: string };
+        Update: { id?: string; campaign_id?: string; title?: string; description?: string | null; due_date?: string | null; scope?: string; assigned_to?: string | null; status?: string; created_by?: string; created_at?: string; updated_at?: string };
         Relationships: [];
       };
       campaign_tools: {
@@ -114,9 +120,9 @@ export type Database = {
         Relationships: [];
       };
       conversations: {
-        Row: { id: string; dm_key: string | null; last_message_at: string | null; last_message_preview: string | null; last_sender_id: string | null; created_at: string };
-        Insert: { id?: string; dm_key?: string | null; last_message_at?: string | null; last_message_preview?: string | null; last_sender_id?: string | null; created_at?: string };
-        Update: { id?: string; dm_key?: string | null; last_message_at?: string | null; last_message_preview?: string | null; last_sender_id?: string | null; created_at?: string };
+        Row: { id: string; dm_key: string | null; last_message_at: string | null; last_message_preview: string | null; last_sender_id: string | null; created_at: string; type: string; campaign_id: string | null };
+        Insert: { id?: string; dm_key?: string | null; last_message_at?: string | null; last_message_preview?: string | null; last_sender_id?: string | null; created_at?: string; type?: string; campaign_id?: string | null };
+        Update: { id?: string; dm_key?: string | null; last_message_at?: string | null; last_message_preview?: string | null; last_sender_id?: string | null; created_at?: string; type?: string; campaign_id?: string | null };
         Relationships: [];
       };
       creator_ai_insights: {
@@ -216,9 +222,9 @@ export type Database = {
         Relationships: [];
       };
       messages: {
-        Row: { id: string; conversation_id: string; sender_id: string; body: string; created_at: string; kind: string };
-        Insert: { id?: string; conversation_id: string; sender_id: string; body: string; created_at?: string; kind?: string };
-        Update: { id?: string; conversation_id?: string; sender_id?: string; body?: string; created_at?: string; kind?: string };
+        Row: { id: string; conversation_id: string; sender_id: string; body: string; created_at: string; kind: string; payload: Json | null };
+        Insert: { id?: string; conversation_id: string; sender_id: string; body: string; created_at?: string; kind?: string; payload?: Json | null };
+        Update: { id?: string; conversation_id?: string; sender_id?: string; body?: string; created_at?: string; kind?: string; payload?: Json | null };
         Relationships: [];
       };
       notifications: {
@@ -285,6 +291,12 @@ export type Database = {
         Row: { id: string; project_id: string; author_id: string; subject_id: string; rating: number; body: string | null; created_at: string };
         Insert: { id?: string; project_id: string; author_id: string; subject_id: string; rating: number; body?: string | null; created_at?: string };
         Update: { id?: string; project_id?: string; author_id?: string; subject_id?: string; rating?: number; body?: string | null; created_at?: string };
+        Relationships: [];
+      };
+      proposals: {
+        Row: { id: string; campaign_id: string; creator_id: string; conversation_id: string | null; version: number; price: number; currency: string; terms: Json; note: string | null; status: string; sent_at: string | null; decided_at: string | null; created_at: string };
+        Insert: { id?: string; campaign_id: string; creator_id: string; conversation_id?: string | null; version: number; price: number; currency: string; terms?: Json; note?: string | null; status?: string; sent_at?: string | null; decided_at?: string | null; created_at?: string };
+        Update: { id?: string; campaign_id?: string; creator_id?: string; conversation_id?: string | null; version?: number; price?: number; currency?: string; terms?: Json; note?: string | null; status?: string; sent_at?: string | null; decided_at?: string | null; created_at?: string };
         Relationships: [];
       };
       reports: {
@@ -355,6 +367,7 @@ export type Database = {
       };
     };
     Functions: {
+      accept_offer: { Args: { p_message: string }; Returns: undefined };
       admin_audit_log: { Args: { p_limit?: number | null }; Returns: { id: number; action: string; target_type: string; target_id: string; meta: Json; created_at: string; actor: Json }[] };
       admin_list_campaigns: { Args: { p_status?: string | null }; Returns: { campaign: Json; total_count: number }[] };
       admin_list_posts: { Args: { p_query?: string | null; p_removed?: boolean | null; p_limit?: number | null; p_offset?: number | null }; Returns: { post: Json; reports: number; total_count: number }[] };
@@ -368,6 +381,7 @@ export type Database = {
       can_read_submission_object: { Args: { p_bucket: string; p_name: string }; Returns: boolean };
       can_view_submission: { Args: { p_submission: string }; Returns: boolean };
       cancel_project: { Args: { p_project: string; p_reason: string }; Returns: undefined };
+      create_campaign_task: { Args: { p_campaign: string; p_title: string; p_description?: string | null; p_due_date?: string | null; p_assignee?: string | null }; Returns: string };
       create_submission: { Args: { p_project: string }; Returns: string };
       creator_card: { Args: { p_id: string }; Returns: Json };
       creator_search_flags: { Args: { p_query: string; p_skills: number[]; p_categories: number[]; p_tools: number[]; p_content_types: number[]; p_styles: number[]; p_experience: string[]; p_availability: string[]; p_languages: number[]; p_verified_only: boolean }; Returns: { id: string; text_score: number; followers: number; created_at: string; m_query: boolean; m_skills: boolean; m_categories: boolean; m_tools: boolean; m_content_types: boolean; m_styles: boolean; m_experience: boolean; m_availability: boolean; m_languages: boolean; m_verified: boolean; overlap: number }[] };
@@ -381,6 +395,7 @@ export type Database = {
       dashboard_posts: { Args: { p_creator: string; p_from: string; p_to: string; p_limit?: number | null }; Returns: { post_id: string; title: string; thumbnail: string; media_type: string; aspect_ratio: string; created_at: string; views: number; avg_watch_ms: number; likes: number; comments: number; saves: number; engagement_rate: number }[] };
       dashboard_series: { Args: { p_creator: string; p_from: string; p_to: string }; Returns: { day: string; views: number; watch_ms: number; likes: number; comments: number; saves: number; new_followers: number; followers: number; visits: number; inquiries: number; earnings: number; engagement_rate_7d: number }[] };
       dashboard_summary: { Args: { p_creator: string; p_from: string; p_to: string }; Returns: Json };
+      delete_campaign_task: { Args: { p_task: string }; Returns: undefined };
       dispute_escrow: { Args: { p_project: string; p_reason: string }; Returns: undefined };
       escrow_transition_allowed: { Args: { p_from: string; p_to: string }; Returns: boolean };
       fund_escrow: { Args: { p_project: string }; Returns: undefined };
@@ -389,17 +404,20 @@ export type Database = {
       get_brand_overview: { Args: Record<PropertyKey, never>; Returns: Json };
       get_brand_sprints: { Args: Record<PropertyKey, never>; Returns: { sprint: Json }[] };
       get_campaign: { Args: { p_id: string }; Returns: Json };
-      get_campaign_applications: { Args: { p_campaign: string }; Returns: { id: string; pitch: string; proposed_rate: number; status: string; created_at: string; creator: Json; shortlisted: boolean; selected: boolean }[] };
-      get_campaign_pipeline: { Args: { p_campaign: string }; Returns: { creator: Json; stage: string; note: string; created_at: string; applied: boolean }[] };
+      get_campaign_applications: { Args: { p_campaign: string }; Returns: { id: string; pitch: string; proposed_rate: number; status: string; created_at: string; creator: Json; shortlisted: boolean; selected: boolean; proposal: Json; conversation_id: string }[] };
+      get_campaign_collaborators: { Args: { p_campaign: string }; Returns: Json };
+      get_campaign_pipeline: { Args: { p_campaign: string }; Returns: { creator: Json; stage: string; note: string; created_at: string; applied: boolean; added_while_draft: boolean }[] };
       get_comments: { Args: { p_post: string; p_limit?: number | null; p_offset?: number | null }; Returns: { id: string; body: string; created_at: string; author: Json; total_count: number }[] };
+      get_conversation: { Args: { p_conversation: string }; Returns: Json };
       get_creator_dashboard: { Args: Record<PropertyKey, never>; Returns: Json };
       get_creator_posts: { Args: { p_creator: string; p_limit?: number | null; p_offset?: number | null }; Returns: { post: Json; total_count: number }[] };
       get_deliveries: { Args: { p_filter?: string | null; p_limit?: number | null; p_offset?: number | null }; Returns: { project: Json; total_count: number }[] };
       get_feed: { Args: { p_limit?: number | null; p_offset?: number | null }; Returns: { post: Json; reason: string; score: number }[] };
       get_follow_list: { Args: { p_user: string; p_kind?: string | null; p_limit?: number | null; p_offset?: number | null }; Returns: { profile: Json; is_following: boolean; total_count: number }[] };
       get_hiring_board: { Args: { p_campaign: string }; Returns: { candidate: Json }[] };
-      get_inbox: { Args: { p_other_role?: string | null; p_query?: string | null; p_limit?: number | null; p_offset?: number | null }; Returns: { conversation_id: string; last_message_at: string; last_message_preview: string; last_sender_id: string; unread_count: number; other: Json; total_count: number }[] };
+      get_inbox: { Args: { p_other_role?: string | null; p_query?: string | null; p_limit?: number | null; p_offset?: number | null }; Returns: { conversation_id: string; last_message_at: string; last_message_preview: string; last_sender_id: string; unread_count: number; other: Json; total_count: number; conversation_type: string; campaign: Json }[] };
       get_my_projects: { Args: { p_filter?: string | null; p_limit?: number | null; p_offset?: number | null }; Returns: { project: Json; total_count: number }[] };
+      get_negotiation: { Args: { p_conversation: string }; Returns: Json };
       get_notifications: { Args: { p_limit?: number | null; p_offset?: number | null }; Returns: { id: string; type: string; entity_type: string; entity_id: string; data: Json; read_at: string; created_at: string; actor: Json; total_count: number }[] };
       get_opportunities: { Args: { p_tab?: string | null; p_limit?: number | null; p_offset?: number | null }; Returns: { campaign: Json; score: number; reasons: string[]; total_count: number }[] };
       get_or_create_dm: { Args: { p_other: string }; Returns: string };
@@ -411,10 +429,11 @@ export type Database = {
       get_submission_detail: { Args: { p_submission: string }; Returns: Json };
       get_swipe_deck: { Args: { p_campaign_id?: string | null; p_limit?: number | null; p_include_seen?: boolean | null }; Returns: { creator: Json; score: number; reasons: string[]; campaign_id: string }[] };
       get_unread_counts: { Args: Record<PropertyKey, never>; Returns: Json };
-      hire_creator: { Args: { p_campaign: string; p_creator: string; p_amount: number; p_currency?: string | null }; Returns: string };
+      hire_creator: { Args: { p_campaign: string; p_creator: string; p_amount: number; p_currency?: string | null }; Returns: string } | { Args: { p_proposal: string }; Returns: string };
       invite_creator: { Args: { p_campaign: string; p_creator: string; p_note?: string | null }; Returns: boolean };
       is_active_user: { Args: Record<PropertyKey, never>; Returns: boolean };
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
+      is_campaign_collaborator: { Args: { p_campaign: string; p_user: string }; Returns: boolean };
       is_end_user_session: { Args: Record<PropertyKey, never>; Returns: boolean };
       is_hex_colors: { Args: { p: string[] }; Returns: boolean };
       is_own_draft_path: { Args: { p_name: string }; Returns: boolean };
@@ -435,17 +454,22 @@ export type Database = {
       record_post_view: { Args: { p_post: string; p_watch_ms?: number | null }; Returns: undefined };
       record_profile_visit: { Args: { p_creator: string }; Returns: undefined };
       refund_escrow: { Args: { p_project: string; p_reason: string }; Returns: undefined };
+      reject_proposal: { Args: { p_proposal: string; p_reason?: string | null }; Returns: undefined };
       release_escrow: { Args: { p_project: string }; Returns: string };
       review_submission: { Args: { p_submission: string; p_decision: string; p_feedback?: string | null }; Returns: undefined };
       search_creators: { Args: { p_query?: string | null; p_skills?: number[] | null; p_categories?: number[] | null; p_tools?: number[] | null; p_content_types?: number[] | null; p_styles?: number[] | null; p_experience?: string[] | null; p_availability?: string[] | null; p_languages?: number[] | null; p_verified_only?: boolean | null; p_sort?: string | null; p_match?: string | null; p_exclude?: string[] | null; p_limit?: number | null; p_offset?: number | null }; Returns: { creator: Json; score: number; matched_groups: number; total_count: number }[] };
       search_creators_diagnostics: { Args: { p_query?: string | null; p_skills?: number[] | null; p_categories?: number[] | null; p_tools?: number[] | null; p_content_types?: number[] | null; p_styles?: number[] | null; p_experience?: string[] | null; p_availability?: string[] | null; p_languages?: number[] | null; p_verified_only?: boolean | null }; Returns: { filter_group: string; results_without: number }[] };
       seed_dashboard_history: { Args: { p_creator: string; p_demo_ids: string[]; p_base: number; p_spike_days_ago: number; p_dip_from: number; p_dip_to: number }; Returns: undefined };
+      send_final_proposal: { Args: { p_conversation: string; p_note?: string | null }; Returns: string };
+      send_offer: { Args: { p_conversation: string; p_price: number; p_terms: Json }; Returns: string };
       short_texts: { Args: { p: string[]; p_max: number }; Returns: boolean };
       sprint_closed: { Args: { p_campaign: string }; Returns: boolean };
+      start_negotiation: { Args: { p_campaign: string; p_creator: string }; Returns: string };
       start_project: { Args: { p_project: string }; Returns: undefined };
       submission_json: { Args: { p_submission: string }; Returns: Json };
       submit_submission: { Args: { p_submission: string }; Returns: undefined };
       unhire_creator: { Args: { p_campaign: string; p_creator: string }; Returns: undefined };
+      update_campaign_task_status: { Args: { p_task: string; p_status: string }; Returns: undefined };
       uuid_or_null: { Args: { p: string }; Returns: string };
       verify_certificate: { Args: { p_code: string }; Returns: Json };
     };

@@ -3,17 +3,18 @@
 import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Loader2, Send, Workflow } from "lucide-react";
+import { ArrowLeft, Loader2, Send, Users, Workflow } from "lucide-react";
 import { toast } from "sonner";
 import type { Message } from "@/types/app";
 import { useDb, useMe } from "@/features/session";
-import { getConversationPeer, getMessages, markConversationRead, sendMessage } from "@/services/messaging";
+import { getConversation, getMessages, getNegotiation, markConversationRead, sendMessage } from "@/services/messaging";
 import { messageSchema } from "@/lib/validation/schemas";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { ErrorState, Skeleton } from "@/components/ui/states";
 import { cn, errorMessage } from "@/lib/utils";
+import { NegotiationCard, StructuredMessage } from "./negotiation";
 
 function dayLabel(iso: string) {
   const d = new Date(iso);
@@ -28,7 +29,16 @@ export function Thread({ conversationId }: { conversationId: string }) {
   const db = useDb();
   const me = useMe();
   const qc = useQueryClient();
-  const peer = useQuery({ queryKey: ["peer", conversationId], queryFn: () => getConversationPeer(db, conversationId) });
+  const info = useQuery({ queryKey: ["conversation", conversationId], queryFn: () => getConversation(db, conversationId) });
+  const isGroup = info.data?.type === "group";
+  const peer = info.data ? { data: isGroup ? null : info.data.members.find((x) => x.id !== me.id) ?? null } : { data: undefined };
+  // Campaign 1:1 chats carry the hiring negotiation (pinned card); null for plain DMs and groups
+  const negotiation = useQuery({
+    queryKey: ["negotiation", conversationId],
+    queryFn: () => getNegotiation(db, conversationId),
+    enabled: !!info.data?.campaign && !isGroup,
+  });
+  const names = new Map((info.data?.members ?? []).map((x) => [x.id, x.display_name]));
   const [messages, setMessages] = useState<Message[]>([]);
   const [hasMore, setHasMore] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
@@ -69,10 +79,16 @@ export function Thread({ conversationId }: { conversationId: string }) {
         const m = payload.new as Message;
         setMessages((list) => (list.some((x) => x.id === m.id) ? list : [...list.filter((x) => !(x.pending && x.body === m.body && m.sender_id === me.id)), m]));
         if (m.sender_id !== me.id) markRead();
+        if (m.kind && m.kind !== "user") qc.invalidateQueries({ queryKey: ["negotiation", conversationId] });
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages", filter: `conversation_id=eq.${conversationId}` }, (payload) => {
+        const m = payload.new as Message;
+        setMessages((list) => list.map((x) => (x.id === m.id ? { ...x, ...m } : x)));
+        qc.invalidateQueries({ queryKey: ["negotiation", conversationId] });
       })
       .subscribe();
     return () => { db.removeChannel(channel); };
-  }, [db, conversationId, me.id, markRead]);
+  }, [db, conversationId, me.id, markRead, qc]);
 
   useLayoutEffect(() => {
     const el = scroller.current;
@@ -123,7 +139,15 @@ export function Thread({ conversationId }: { conversationId: string }) {
     <div className="flex h-full min-h-0 flex-col">
       <header className="flex items-center gap-3 border-b border-line pb-3">
         <Link href="/inbox" className="grid size-9 place-items-center rounded-full hover:bg-ink/5 lg:hidden" aria-label="Back to inbox"><ArrowLeft className="size-5" /></Link>
-        {peer.data ? (
+        {isGroup && info.data ? (
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-amber-soft"><Users className="size-5" /></span>
+            <span className="min-w-0">
+              <span className="block truncate font-semibold">{info.data.campaign?.title ?? "Group"}</span>
+              <span className="block truncate text-xs text-ink-3">Group · {info.data.members.map((x) => (x.id === me.id ? "You" : x.display_name)).join(", ")}</span>
+            </span>
+          </div>
+        ) : peer.data ? (
           <Link href={`/u/${peer.data.username}`} className="flex min-w-0 items-center gap-3">
             <Avatar src={peer.data.avatar_url} name={peer.data.display_name} verified={peer.data.is_verified} />
             <span className="min-w-0">
@@ -131,14 +155,16 @@ export function Thread({ conversationId }: { conversationId: string }) {
               <span className="block truncate text-xs text-ink-3">@{peer.data.username}</span>
             </span>
             <Chip tone="outline" className="capitalize">{peer.data.role}</Chip>
+            {info.data?.campaign && <span className="hidden truncate text-xs text-ink-3 sm:inline">re: {info.data.campaign.title}</span>}
           </Link>
-        ) : peer.isError ? <span className="text-sm text-danger">Conversation unavailable</span> : <Skeleton className="h-10 w-48" />}
+        ) : info.isError ? <span className="text-sm text-danger">Conversation unavailable</span> : <Skeleton className="h-10 w-48" />}
       </header>
 
       <div ref={scroller} onScroll={(e) => {
         const el = e.currentTarget;
         stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
       }} className="min-h-0 flex-1 space-y-1 overflow-y-auto py-4" aria-live="polite">
+        {negotiation.data && <div className="sticky top-0 z-10 bg-bg/95 pb-2 backdrop-blur-sm"><NegotiationCard conversationId={conversationId} n={negotiation.data} /></div>}
         {state === "loading" && <div className="space-y-3">{[0, 1, 2].map((i) => <Skeleton key={i} className={cn("h-10 w-2/3", i % 2 && "ml-auto")} />)}</div>}
         {state === "error" && <ErrorState error={error} onRetry={() => latest.refetch()} />}
         {state === "ready" && hasMore && (
@@ -165,9 +191,20 @@ export function Thread({ conversationId }: { conversationId: string }) {
               </div>
             );
           }
+          if (m.kind === "offer" || m.kind === "proposal" || m.kind === "task") {
+            return (
+              <div key={m.id} className="py-1">
+                {newDay && <p className="py-3 text-center text-[11px] font-medium uppercase tracking-wider text-ink-3">{dayLabel(m.created_at)}</p>}
+                <StructuredMessage m={m} mine={mine} n={negotiation.data} conversationId={conversationId} />
+              </div>
+            );
+          }
           return (
             <div key={m.id}>
               {newDay && <p className="py-3 text-center text-[11px] font-medium uppercase tracking-wider text-ink-3">{dayLabel(m.created_at)}</p>}
+              {isGroup && !mine && (i === 0 || messages[i - 1].sender_id !== m.sender_id || messages[i - 1].kind !== m.kind) && (
+                <p className="px-3 pt-1 text-[11px] font-medium text-ink-3">{names.get(m.sender_id) ?? "Member"}</p>
+              )}
               <div className={cn("flex", mine ? "justify-end" : "justify-start")}>
                 <div className={cn("max-w-[78%] whitespace-pre-line break-words rounded-3xl px-4 py-2.5 text-sm",
                   mine ? "rounded-br-lg bg-amber text-on-amber" : "rounded-bl-lg bg-card shadow-sm", m.pending && "opacity-60")}>

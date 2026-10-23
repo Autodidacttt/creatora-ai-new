@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, BadgeCheck, MessageSquare, RotateCcw, UserCheck, Wrench, XCircle } from "lucide-react";
+import { ArrowLeft, BadgeCheck, MessageSquare, RotateCcw, Wrench, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import type { SubmissionStatus } from "@/types/workspace";
 import { useDb } from "@/features/session";
@@ -18,7 +18,7 @@ import { cn, errorMessage, timeAgo } from "@/lib/utils";
 import { formatMoney } from "@/lib/money";
 import { AiReviewPanel } from "./ai-review-panel";
 import { Countdown } from "./countdown";
-import { HireDialog } from "./hire-dialog";
+import { HireButton } from "./hire-button";
 import { MediaThumb, PreviewViewer, previewPaths, useSignedPreviews } from "./media";
 import { SubmissionStatusChip } from "./status";
 import { CommentThread } from "./version-card";
@@ -41,7 +41,6 @@ export function ReviewWorkspace({ id, onBack, onDecided }: { id: string; onBack?
   const [mode, setMode] = useState<Decision | null>(null);
   const [feedback, setFeedback] = useState("");
   const [busy, setBusy] = useState(false);
-  const [hireOpen, setHireOpen] = useState(false);
 
   if (q.isPending) return <div className="space-y-3"><Skeleton className="h-16 rounded-[1.75rem]" /><Skeleton className="aspect-video rounded-[1.75rem]" /><Skeleton className="h-40 rounded-[1.75rem]" /></div>;
   if (q.isError) return <ErrorState error={q.error} onRetry={() => q.refetch()} />;
@@ -119,8 +118,8 @@ export function ReviewWorkspace({ id, onBack, onDecided }: { id: string; onBack?
         <section className="glass space-y-3 rounded-[1.75rem] p-4" aria-label="Decision">
           {!hired && (
             <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-amber-soft/70 p-3 text-sm">
-              <span className="min-w-0 flex-1">This is sprint spec work — hire {s.creator.display_name} first to set the fee and open escrow, then approve.</span>
-              <Button size="sm" variant="primary" onClick={() => setHireOpen(true)}><UserCheck /> Hire</Button>
+              <span className="min-w-0 flex-1">This is sprint spec work. Agree the fee with {s.creator.display_name} in chat and accept their final proposal to hire, then approve.</span>
+              <HireButton campaignId={s.campaign.id} creatorId={s.creator.id} />
             </div>
           )}
           <div className="flex flex-wrap gap-2">
@@ -157,8 +156,6 @@ export function ReviewWorkspace({ id, onBack, onDecided }: { id: string; onBack?
         <CommentThread submission={s} currentMs={file?.preview_kind === "video_ffmpeg" ? ms : null} fileId={file?.id ?? null} onAdded={() => q.refetch()} />
       </section>
 
-      <HireDialog open={hireOpen} onOpenChange={setHireOpen} campaignId={s.campaign.id} creator={s.creator}
-        suggestedAmount={s.project.campaign.budget_min} currency={s.project.campaign.currency} onHired={() => q.refetch()} />
     </div>
   );
 }

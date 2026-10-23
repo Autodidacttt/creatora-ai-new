@@ -57,6 +57,12 @@ export function notificationHref(n: NotificationItem, role: string): string {
     }
     case "opportunity":
       return n.entity_id ? `/campaigns/${n.entity_id}` : "/opportunities";
+    case "proposal":
+      // Negotiation steps live in the campaign conversation
+      return n.entity_id ? `/inbox/${n.entity_id}` : "/inbox";
+    case "task":
+      if (!n.entity_id) return role === "creator" ? "/opportunities?tab=projects" : "/campaigns";
+      return role === "creator" ? `/opportunities/projects/${n.entity_id}` : `/brand/campaigns/projects/${n.entity_id}`;
     default:
       return "/home";
   }
@@ -79,6 +85,21 @@ const PAYMENT_TEXT: Record<string, (who: string, t: string, d: NotificationItem[
   released: (who, t, d) => `${who} released payment for “${t}” · ${d.amount_label ?? ""} (test mode)`,
   refunded: (_who, t) => `Escrow for “${t}” was refunded (test mode)`,
   disputed: (who, t) => `${who} opened a payment dispute on “${t}”`,
+};
+const PROPOSAL_TEXT: Record<string, (who: string, t: string, d: NotificationItem["data"]) => string> = {
+  negotiation_opened: (who, t) => `${who} wants to hire you for “${t}” — agree the terms in chat`,
+  offer: (who, t, d) => `${who} sent an offer for “${t}”${d.amount_label ? ` · ${d.amount_label}` : ""}`,
+  offer_accepted: (who, t, d) => `${who} accepted your offer for “${t}”${d.amount_label ? ` · ${d.amount_label}` : ""}`,
+  proposal_sent: (who, t, d) => `${who} sent final proposal v${d.version ?? 1} for “${t}” — review and accept to hire`,
+  proposal_accepted: (who, t, d) => `${who} accepted your proposal — you're hired for “${t}”${d.amount_label ? ` · ${d.amount_label}` : ""} 🎉`,
+  proposal_rejected: (who, t, d) => `${who} declined proposal v${d.version ?? 1} for “${t}”`,
+  hired_confirmed: (_who, t, d) => `Hire confirmed for “${t}”${d.amount_label ? ` · ${d.amount_label}` : ""}`,
+};
+const TASK_TEXT: Record<string, (who: string, t: string, d: NotificationItem["data"]) => string> = {
+  task_assigned: (who, t, d) => `${who} assigned ${d.scope === "group" ? "a group task" : "you a task"} on “${t}”: ${d.title ?? ""}`,
+  task_todo: (who, t, d) => `${who} moved “${d.title ?? "a task"}” back to to-do on “${t}”`,
+  task_in_progress: (who, t, d) => `${who} started “${d.title ?? "a task"}” on “${t}”`,
+  task_done: (who, t, d) => `${who} finished “${d.title ?? "a task"}” on “${t}” ✓`,
 };
 
 export function notificationText(n: NotificationItem): string {
@@ -103,6 +124,14 @@ export function notificationText(n: NotificationItem): string {
     case "payment": {
       const fn = PAYMENT_TEXT[String(d.event)];
       return fn ? fn(who, String(d.campaign_title ?? "a project"), d) : `Payment update on “${d.campaign_title ?? "a project"}”`;
+    }
+    case "proposal": {
+      const fn = PROPOSAL_TEXT[String(d.event)];
+      return fn ? fn(who, String(d.campaign_title ?? "a brief"), d) : `Hiring update on “${d.campaign_title ?? "a brief"}”`;
+    }
+    case "task": {
+      const fn = TASK_TEXT[String(d.event)];
+      return fn ? fn(who, String(d.campaign_title ?? "a brief"), d) : `Task update on “${d.campaign_title ?? "a brief"}”`;
     }
     case "opportunity":
       return d.invited

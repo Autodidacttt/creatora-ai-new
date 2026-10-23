@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Check, Inbox, ListChecks, Sparkles, Star, StarOff, UserCheck, Users, X } from "lucide-react";
+import { Check, FileSignature, Inbox, ListChecks, MessagesSquare, Plus, Sparkles, Star, StarOff, UserCheck, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import type { CampaignCard, CreatorCard } from "@/types/app";
 import { useDb } from "@/features/session";
@@ -18,14 +18,19 @@ import { ContactButton } from "@/components/posts/actions";
 import { CreatorResultCard } from "@/components/discovery/creator-card";
 import { errorMessage, money, timeAgo } from "@/lib/utils";
 import { ScoreBreakdown, ScoreRing } from "./score-breakdown";
-import { HireDialog } from "@/components/workspace/hire-dialog";
+import { useStartNegotiation } from "@/components/workspace/hire-button";
+import { canShortlist, SHORTLIST_LOCKED_HINT, ShortlistGate } from "./shortlist-gate";
+
+const PROPOSAL_LABEL: Record<string, string> = {
+  draft: "Proposal draft", sent: "Final proposal sent", accepted: "Proposal accepted", rejected: "Proposal declined", superseded: "Proposal replaced",
+};
 
 function usePipelineActions(campaign: CampaignCard) {
   const campaignId = campaign.id;
   const db = useDb();
   const qc = useQueryClient();
   const [busy, setBusy] = useState<string | null>(null);
-  const [hiring, setHiring] = useState<{ creator: CreatorCard; amount: number | null } | null>(null);
+  const negotiation = useStartNegotiation();
   const refresh = () => {
     ["applications", "pipeline", "campaign", "matches", "hiring", "deliveries"].forEach((k) => qc.invalidateQueries({ queryKey: [k, campaignId] }));
   };
@@ -42,19 +47,17 @@ function usePipelineActions(campaign: CampaignCard) {
     }
   };
   return {
-    busy,
+    busy: busy ?? (negotiation.busy ? `x-${negotiation.busy}` : null),
+    canShortlist: canShortlist(campaign.status),
     shortlist: (creator: CreatorCard, on: boolean) =>
       run(`s-${creator.id}`, () => setShortlisted(db, campaignId, creator.id, on), on ? `${creator.display_name} shortlisted` : "Removed from shortlist"),
-    /** Hiring opens the hire dialog (agreed amount + escrow); undoing a hire only works before any work or payment. */
-    select: (creator: CreatorCard, on: boolean, suggested?: number | null) =>
-      on ? setHiring({ creator, amount: suggested ?? campaign.budget_min })
+    /** Hire opens the negotiation chat (nothing is hired until the brand accepts a final proposal); undoing a hire only works before any work or payment. */
+    select: (creator: CreatorCard, on: boolean) =>
+      on ? negotiation.start(campaignId, creator.id)
         : run(`x-${creator.id}`, () => setSelected(db, campaignId, creator.id, false), "Hire undone"),
     reject: (appId: string, on: boolean) =>
       run(`r-${appId}`, () => setApplicationStatus(db, appId, on ? "rejected" : "pending"), on ? "Application declined" : "Application restored"),
-    dialog: hiring ? (
-      <HireDialog open onOpenChange={(o) => !o && setHiring(null)} campaignId={campaignId} creator={hiring.creator}
-        suggestedAmount={hiring.amount} currency={campaign.currency} onHired={refresh} />
-    ) : null,
+    dialog: <ShortlistGate campaign={campaign} onPublished={refresh} />,
   };
 }
 
@@ -80,6 +83,7 @@ export function MatchesTab({ campaign }: { campaign: CampaignCard }) {
 
   return (
     <div className="space-y-4">
+      {actions.dialog}
       <p className="flex items-start gap-2 rounded-2xl bg-amber-soft/70 px-4 py-3 text-sm">
         <Sparkles className="mt-0.5 size-4 shrink-0" />
         <span>
@@ -107,7 +111,8 @@ export function MatchesTab({ campaign }: { campaign: CampaignCard }) {
                     <ScoreBreakdown breakdown={m.breakdown} />
                   </details>
                   <div className="flex flex-wrap gap-1.5">
-                    <Button size="sm" variant={shortlisted ? "secondary" : "primary"} loading={actions.busy === `s-${m.creator.id}`} onClick={() => actions.shortlist(m.creator, !shortlisted)}>
+                    <Button size="sm" variant={shortlisted ? "secondary" : "primary"} loading={actions.busy === `s-${m.creator.id}`} onClick={() => actions.shortlist(m.creator, !shortlisted)}
+                      disabled={!shortlisted && !actions.canShortlist} title={!shortlisted && !actions.canShortlist ? SHORTLIST_LOCKED_HINT : undefined}>
                       {shortlisted ? <StarOff /> : <Star />} {shortlisted ? "Shortlisted" : "Shortlist"}
                     </Button>
                     <Button size="sm" variant={selected ? "dark" : "secondary"} loading={actions.busy === `x-${m.creator.id}`} onClick={() => actions.select(m.creator, !selected)}>
@@ -122,7 +127,6 @@ export function MatchesTab({ campaign }: { campaign: CampaignCard }) {
         })}
       </div>
       {q.hasNextPage && <InfiniteSentinel onVisible={() => !q.isFetchingNextPage && q.fetchNextPage()} loading={q.isFetchingNextPage} />}
-      {actions.dialog}
     </div>
   );
 }
@@ -178,14 +182,23 @@ export function ApplicationsTab({ campaign }: { campaign: CampaignCard }) {
               {a.status === "rejected" && <Chip tone="danger">Declined</Chip>}
               {a.selected && <Chip tone="dark" icon={<Check />}>Hired</Chip>}
               {a.shortlisted && !a.selected && <Chip tone="amber" icon={<Star />}>Shortlisted</Chip>}
+              {a.proposal && !a.selected && (
+                <Chip tone={a.proposal.status === "sent" ? "amber" : a.proposal.status === "rejected" ? "danger" : "neutral"} icon={<FileSignature />}>
+                  {PROPOSAL_LABEL[a.proposal.status] ?? a.proposal.status} · v{a.proposal.version} · {money(a.proposal.price, null, a.proposal.currency).replace("from ", "")}
+                </Chip>
+              )}
+              {!a.proposal && a.conversation_id && !a.selected && <Chip tone="outline" icon={<MessagesSquare />}>Negotiating</Chip>}
               <span className="flex-1" />
-              <Button size="sm" variant={a.shortlisted ? "secondary" : "primary"} loading={actions.busy === `s-${a.creator.id}`} onClick={() => actions.shortlist(a.creator, !a.shortlisted)}>
+              <Button size="sm" variant={a.shortlisted ? "secondary" : "primary"} loading={actions.busy === `s-${a.creator.id}`} onClick={() => actions.shortlist(a.creator, !a.shortlisted)}
+                disabled={!a.shortlisted && !actions.canShortlist} title={!a.shortlisted && !actions.canShortlist ? SHORTLIST_LOCKED_HINT : undefined}>
                 {a.shortlisted ? <StarOff /> : <Star />} {a.shortlisted ? "Unshortlist" : "Shortlist"}
               </Button>
-              <Button size="sm" variant={a.selected ? "dark" : "secondary"} loading={actions.busy === `x-${a.creator.id}`} onClick={() => actions.select(a.creator, !a.selected, a.proposed_rate)}>
+              <Button size="sm" variant={a.selected ? "dark" : "secondary"} loading={actions.busy === `x-${a.creator.id}`} onClick={() => actions.select(a.creator, !a.selected)}>
                 <UserCheck /> {a.selected ? "Hired" : "Hire"}
               </Button>
-              <ContactButton profileId={a.creator.id} size="sm" label="Message" />
+              {a.conversation_id
+                ? <Link href={`/inbox/${a.conversation_id}`} className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-medium hover:bg-ink/5"><MessagesSquare className="size-3.5" /> Negotiation</Link>
+                : <ContactButton profileId={a.creator.id} size="sm" label="Message" />}
               <Button size="sm" variant="ghost" loading={actions.busy === `r-${a.id}`} onClick={() => actions.reject(a.id, a.status !== "rejected")}>
                 <X /> {a.status === "rejected" ? "Restore" : "Decline"}
               </Button>
@@ -214,7 +227,17 @@ export function PipelineTab({ campaign }: { campaign: CampaignCard }) {
   }
   const column = (title: string, list: typeof q.data, kind: "shortlisted" | "selected") => (
     <div className="space-y-3">
-      <h3 className="display text-lg">{title} <span className="text-sm font-normal text-ink-3">{list.length}{kind === "selected" && ` / ${campaign.creators_needed} needed`}</span></h3>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="display text-lg">{title} <span className="text-sm font-normal text-ink-3">
+          {kind === "selected" ? `${list.length} of ${campaign.creators_needed} hired` : list.length}
+        </span></h3>
+        {/* The creator count is a target, not a cap: brands can always hire more */}
+        {kind === "selected" && (
+          <Link href={`/campaigns/${campaign.id}?tab=matches`} className="inline-flex h-8 items-center gap-1.5 rounded-full bg-card px-3 text-xs font-medium shadow-sm hover:bg-card/70">
+            <Plus className="size-3.5" /> Add more creators
+          </Link>
+        )}
+      </div>
       {list.length === 0 && <p className="rounded-2xl border border-dashed border-line p-6 text-center text-sm text-ink-3">Nobody yet</p>}
       {list.map((p) => (
         <div key={`${p.stage}-${p.creator.id}`} className="glass flex flex-wrap items-center gap-3 rounded-[1.5rem] p-3">
@@ -223,6 +246,7 @@ export function PipelineTab({ campaign }: { campaign: CampaignCard }) {
             <span className="min-w-0">
               <span className="block truncate text-sm font-semibold">{p.creator.display_name}</span>
               <span className="block truncate text-xs text-ink-3">{p.applied ? "Applied" : "Invited from discovery"} · {timeAgo(p.created_at)}{p.stage === "completed" && " · completed"}</span>
+              {p.added_while_draft && <span className="mt-0.5 block text-[11px] text-amber-2" title="Added before the brief was published. It stays, but new shortlists need a published brief.">Shortlisted while the brief was a draft</span>}
             </span>
           </Link>
           <div className="flex gap-1.5">
@@ -238,10 +262,12 @@ export function PipelineTab({ campaign }: { campaign: CampaignCard }) {
     </div>
   );
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
-      {column("Shortlisted", shortlisted, "shortlisted")}
-      {column("Hired", selected, "selected")}
+    <div className="space-y-4">
       {actions.dialog}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {column("Shortlisted", shortlisted, "shortlisted")}
+        {column("Hired", selected, "selected")}
+      </div>
     </div>
   );
 }

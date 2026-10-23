@@ -32,7 +32,7 @@ function campaignRow(v: CampaignValues) {
     budget_max: v.budget_max ?? null,
     currency: v.currency,
     deadline: v.deadline || null,
-    creators_needed: Number(v.creators_needed),
+    creators_needed: v.creators_needed,
     usage_rights: v.usage_rights,
     territory: v.territory,
     usage_duration: v.usage_duration,
@@ -93,11 +93,18 @@ export interface Application {
   creator: CreatorCard;
   shortlisted: boolean;
   selected: boolean;
+  /** The creator's latest proposal for this brief (draft | sent | accepted | rejected | superseded) */
+  proposal: { status: string; version: number; price: number; currency: string } | null;
+  /** The hiring conversation, once the brand has opened it */
+  conversation_id: string | null;
 }
 
 export async function getApplications(db: DB, campaignId: string): Promise<Application[]> {
   const rows = unwrap(await db.rpc("get_campaign_applications", { p_campaign: campaignId }));
-  return rows.map((r) => ({ ...r, status: r.status as Application["status"], creator: as<CreatorCard>(r.creator) }));
+  return rows.map((r) => ({
+    ...r, status: r.status as Application["status"], creator: as<CreatorCard>(r.creator),
+    proposal: as<Application["proposal"]>(r.proposal),
+  }));
 }
 
 export interface PipelineEntry {
@@ -106,6 +113,8 @@ export interface PipelineEntry {
   note: string | null;
   created_at: string;
   applied: boolean;
+  /** Shortlisted while the brief was still a draft (before the published-only rule) */
+  added_while_draft: boolean;
 }
 
 export async function getPipeline(db: DB, campaignId: string): Promise<PipelineEntry[]> {
@@ -126,9 +135,9 @@ export async function setShortlisted(db: DB, campaignId: string, creatorId: stri
   }
 }
 
-/** Hiring goes through hire_creator (amount + escrow, see services/workspace); this only undoes an untouched hire. */
+/** Hiring happens only by accepting a final proposal (see services/messaging); this only undoes an untouched hire. */
 export async function setSelected(db: DB, campaignId: string, creatorId: string, on: boolean) {
-  if (on) throw new ServiceError("Use Hire to set the agreed amount.");
+  if (on) throw new ServiceError("Hire by negotiating in chat and accepting the creator's final proposal.");
   unwrap(await db.rpc("unhire_creator", { p_campaign: campaignId, p_creator: creatorId }));
 }
 

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { MessageCircle, Search } from "lucide-react";
+import { MessageCircle, Search, Users } from "lucide-react";
 import { useDb, useMe } from "@/features/session";
 import { useDebounced } from "@/hooks/use-debounce";
 import { getInbox } from "@/services/messaging";
@@ -61,12 +61,17 @@ export function InboxList() {
                 className={cn("flex items-center gap-3 rounded-2xl p-2.5 transition-colors hover:bg-card/70",
                   activeId === c.conversation_id && "bg-card shadow-sm", c.unread_count > 0 && "font-semibold")}
               >
-                <Avatar src={c.other.avatar_url} name={c.other.display_name} verified={c.other.is_verified} />
+                {c.conversation_type === "group"
+                  ? <span className="grid size-10 shrink-0 place-items-center rounded-full bg-amber-soft" aria-hidden><Users className="size-5" /></span>
+                  : <Avatar src={c.other.avatar_url} name={c.other.display_name} verified={c.other.is_verified} />}
                 <span className="min-w-0 flex-1">
                   <span className="flex items-baseline justify-between gap-2">
                     <span className="truncate text-sm">{c.other.display_name}</span>
                     <span className="shrink-0 text-[11px] font-normal text-ink-3">{timeAgo(c.last_message_at)}</span>
                   </span>
+                  {c.conversation_type === "direct" && c.campaign && (
+                    <span className="block truncate text-[11px] font-normal text-amber-2">re: {c.campaign.title}</span>
+                  )}
                   <span className="flex items-center justify-between gap-2">
                     <span className={cn("truncate text-xs", c.unread_count ? "text-ink" : "font-normal text-ink-3")}>
                       {c.last_sender_id === me.id && "You: "}{c.last_message_preview ?? "Say hello 👋"}
