@@ -85,7 +85,8 @@ export function BottomTabs({ items, unreadMessages }: { items: NavItem[]; unread
               aria-label={item.label}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "relative grid size-11 place-items-center rounded-full transition-colors",
+                // 6 items on the brand bar: a touch smaller on the narrowest phones so the bar never overflows
+                "relative grid size-10 place-items-center rounded-full transition-colors min-[380px]:size-11",
                 active ? "bg-amber text-on-amber shadow-[0_0_18px_rgba(255,192,46,0.55)]" : "text-ink-2",
               )}
             >

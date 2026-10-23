@@ -14,10 +14,12 @@ export function navFor(role: Role, username: string): NavItem[] {
   const profile: NavItem = { label: "Profile", href: `/u/${username}`, icon: User, match: [`/u/${username}`, "/dashboard", "/settings", "/verification", "/saved", "/posts"] };
   const inbox: NavItem = { label: "Inbox", href: "/inbox", icon: MessageCircle, badge: "messages" };
   const home: NavItem = { label: "Home", href: "/home", icon: House };
+  const swipe: NavItem = { label: "Swipe", href: "/swipe", icon: Layers, match: ["/swipe"] };
   if (role === "brand") {
     return [
       home,
-      { label: "Discover", href: "/discover", icon: Compass, match: ["/discover", "/swipe"] },
+      { label: "Discover", href: "/discover", icon: Compass, match: ["/discover"] },
+      swipe,
       { label: "Campaigns", href: "/campaigns", icon: Megaphone, match: ["/campaigns", "/brand"] },
       inbox,
       profile,
@@ -34,7 +36,7 @@ export function navFor(role: Role, username: string): NavItem[] {
   }
   return [
     home,
-    { label: "Swipe", href: "/swipe", icon: Layers, match: ["/swipe", "/discover"] },
+    { ...swipe, match: ["/swipe", "/discover"] },
     { label: "Opportunities", href: "/opportunities", icon: Briefcase, match: ["/opportunities", "/campaigns"] },
     inbox,
     profile,
