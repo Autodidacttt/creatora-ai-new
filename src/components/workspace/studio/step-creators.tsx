@@ -16,8 +16,9 @@ import { EmptyState, ErrorState, Skeleton } from "@/components/ui/states";
 import { InfiniteSentinel } from "@/components/ui/misc";
 import { ScoreBreakdown, ScoreRing } from "@/components/campaign/score-breakdown";
 import { errorMessage } from "@/lib/utils";
+import { SHORTLIST_LOCKED_HINT } from "@/components/campaign/shortlist-gate";
 
-/** Step 4: rank creators against the saved brief, shortlist / invite, and publish. */
+/** Step 4: rank creators against the saved brief, publish, then shortlist / invite (both need a published brief). */
 export function StepCreators({ campaignId, canPublish, publishProblem }: { campaignId: string; canPublish: boolean; publishProblem: string | null }) {
   const db = useDb();
   const qc = useQueryClient();
@@ -82,7 +83,9 @@ export function StepCreators({ campaignId, canPublish, publishProblem }: { campa
                 <div className="mt-2"><ScoreBreakdown breakdown={m.breakdown} /></div>
               </details>
               <div className="flex flex-wrap gap-1.5">
-                <Button size="sm" variant={on ? "secondary" : "primary"} loading={busy === `s${m.creator.id}`} onClick={() => run(`s${m.creator.id}`, async () => {
+                <Button size="sm" variant={on ? "secondary" : "primary"} loading={busy === `s${m.creator.id}`}
+                  disabled={!on && !live} title={!on && !live ? `${SHORTLIST_LOCKED_HINT} (Publish is below)` : undefined}
+                  onClick={() => run(`s${m.creator.id}`, async () => {
                   await setShortlisted(db, campaignId, m.creator.id, !on);
                   await pipeline.refetch();
                   toast.success(on ? "Removed from shortlist" : `${m.creator.display_name} shortlisted`);
