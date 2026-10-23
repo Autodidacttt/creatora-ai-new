@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { CURRENCIES } from "@/config/constants";
 import { useDb } from "@/features/session";
 import { createSprint, getBrandSprints } from "@/services/workspace";
+import { Stepper } from "@/components/ui/stepper";
 import { sprintSchema, STUDIO_ASPECTS } from "@/lib/validation/workspace";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { ToggleChip } from "@/components/ui/chip";
@@ -21,10 +22,10 @@ import { ExpandableCard } from "./expandable";
 
 function SprintForm({ onCreated }: { onCreated: (id: string) => void }) {
   const db = useDb();
-  const [v, setV] = useState({ title: "", description: "", deliverables: "", budget: "", currency: "USD", hours: "48", aspect_ratios: ["9:16"] as string[] });
+  const [v, setV] = useState({ title: "", description: "", deliverables: "", budget: "", currency: "USD", hours: "48", aspect_ratios: ["9:16"] as string[], creators_needed: 1 });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
-  const set = (k: keyof typeof v, val: string | string[]) => setV((x) => ({ ...x, [k]: val }));
+  const set = (k: keyof typeof v, val: string | string[] | number) => setV((x) => ({ ...x, [k]: val }));
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -38,7 +39,7 @@ function SprintForm({ onCreated }: { onCreated: (id: string) => void }) {
     try {
       const id = await createSprint(db, parsed.data);
       toast.success("Sprint is live — the clock is running");
-      setV({ title: "", description: "", deliverables: "", budget: "", currency: v.currency, hours: "48", aspect_ratios: ["9:16"] });
+      setV({ title: "", description: "", deliverables: "", budget: "", currency: v.currency, hours: "48", aspect_ratios: ["9:16"], creators_needed: 1 });
       onCreated(id);
     } catch (err) {
       toast.error(errorMessage(err));
@@ -58,7 +59,7 @@ function SprintForm({ onCreated }: { onCreated: (id: string) => void }) {
       <Field label="Deliverables" htmlFor="sp-del" optional>
         <Input id="sp-del" value={v.deliverables} onChange={(e) => set("deliverables", e.target.value)} maxLength={1000} placeholder="e.g. 3 × 8s loops, 9:16, no audio" />
       </Field>
-      <div className="grid gap-3 sm:grid-cols-[1fr_7rem_8rem]">
+      <div className="grid gap-3 sm:grid-cols-[1fr_7rem_8rem_11rem]">
         <Field label="Fixed budget" htmlFor="sp-budget" error={errors.budget}>
           <Input id="sp-budget" inputMode="numeric" value={v.budget} onChange={(e) => set("budget", e.target.value.replace(/[^0-9]/g, ""))} placeholder="800" />
         </Field>
@@ -69,6 +70,9 @@ function SprintForm({ onCreated }: { onCreated: (id: string) => void }) {
           <Select id="sp-hours" value={v.hours} onChange={(e) => set("hours", e.target.value)}>
             {["24", "48", "72"].map((h) => <option key={h} value={h}>{h} hours</option>)}
           </Select>
+        </Field>
+        <Field label="Creators to hire" htmlFor="sp-n">
+          <Stepper id="sp-n" value={v.creators_needed} onChange={(n) => set("creators_needed", n)} min={1} max={100} />
         </Field>
       </div>
       <Field label="Formats" error={errors.aspect_ratios}>

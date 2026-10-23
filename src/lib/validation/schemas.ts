@@ -132,7 +132,7 @@ export const campaignSchema = z
     budget_max: z.coerce.number().int().min(0).nullable(),
     currency: z.string().length(3),
     deadline: z.string().nullable(),
-    creators_needed: z.coerce.number().int().min(1).max(50),
+    creators_needed: z.coerce.number().int().min(1).max(100),
     usage_rights: z.array(z.enum(["organic_social", "paid_social", "broadcast", "ooh", "web", "internal"])),
     territory: z.string().trim().min(1).max(80),
     usage_duration: z.enum(["3_months", "6_months", "12_months", "24_months", "perpetual"]),

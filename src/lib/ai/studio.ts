@@ -177,7 +177,7 @@ export async function generateStudioBrief(
   const b = (json.budget ?? {}) as Record<string, unknown>;
   if (typeof b.min === "number" && typeof b.max === "number" && b.min > b.max) [b.min, b.max] = [b.max, b.min];
   json.title = String(json.title ?? "").slice(0, 140);
-  json.creators_needed = Math.min(50, Math.max(1, Number(json.creators_needed) || 1));
+  json.creators_needed = Math.min(100, Math.max(1, Number(json.creators_needed) || 1));
   if (typeof json.deadline_days === "number") json.deadline_days = Math.min(365, Math.max(1, Math.round(json.deadline_days)));
   if (!Array.isArray(json.aspect_ratios) || !json.aspect_ratios.length) json.aspect_ratios = ["9:16"];
 

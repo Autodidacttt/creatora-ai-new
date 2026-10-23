@@ -9,6 +9,7 @@ import { SECTION_FIELDS, STUDIO_ASPECTS, type BriefSection, type StudioBrief } f
 import { Button } from "@/components/ui/button";
 import { ToggleChip } from "@/components/ui/chip";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
+import { Stepper } from "@/components/ui/stepper";
 import { Switch } from "@/components/ui/misc";
 import { errorMessage } from "@/lib/utils";
 import { ListEditor } from "./list-editor";
@@ -110,10 +111,10 @@ export function StepBrief({ brief, onChange, lookups, idea, linkSummary, aiNote 
         <Field label="Formats">
           <div className="flex flex-wrap gap-2">{STUDIO_ASPECTS.map((a) => <ToggleChip key={a} selected={brief.aspect_ratios.includes(a)} onClick={() => set("aspect_ratios", toggle(brief.aspect_ratios, a))}>{a}</ToggleChip>)}</div>
         </Field>
-        <div className="grid gap-3 sm:grid-cols-[1fr_9rem_9rem]">
+        <div className="grid gap-3 sm:grid-cols-[1fr_9rem_11rem]">
           <Field label="Timeline" htmlFor="b-tl"><Input id="b-tl" value={brief.timeline} maxLength={300} onChange={(e) => set("timeline", e.target.value)} /></Field>
           <Field label="Days to deliver" htmlFor="b-days"><Input id="b-days" inputMode="numeric" value={brief.deadline_days ?? ""} onChange={(e) => set("deadline_days", num(e.target.value) ? Math.min(365, num(e.target.value)!) : null)} /></Field>
-          <Field label="Creators" htmlFor="b-cn"><Input id="b-cn" inputMode="numeric" value={brief.creators_needed} onChange={(e) => set("creators_needed", Math.min(50, Math.max(1, num(e.target.value) ?? 1)))} /></Field>
+          <Field label="Creators" htmlFor="b-cn"><Stepper id="b-cn" value={brief.creators_needed} onChange={(n) => set("creators_needed", n)} min={1} max={100} /></Field>
         </div>
       </Section>
 

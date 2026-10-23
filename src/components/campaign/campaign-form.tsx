@@ -13,6 +13,7 @@ import { campaignSchema, type CampaignInput } from "@/lib/validation/schemas";
 import { createCampaign, updateCampaign } from "@/services/campaigns";
 import { ASPECT_RATIOS, CURRENCIES, EXCLUSIVITY, LICENSE_TYPES, USAGE_DURATIONS, USAGE_RIGHTS } from "@/config/constants";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
+import { Stepper } from "@/components/ui/stepper";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { ToggleChip } from "@/components/ui/chip";
 import { Switch } from "@/components/ui/misc";
@@ -37,7 +38,7 @@ interface FormState {
   budget_max: string;
   currency: string;
   deadline: string;
-  creators_needed: string;
+  creators_needed: number;
   usage_rights: string[];
   territory: string;
   usage_duration: string;
@@ -66,7 +67,7 @@ function fromCampaign(c?: CampaignCard): FormState {
     budget_max: c?.budget_max?.toString() ?? "",
     currency: c?.currency ?? "USD",
     deadline: c?.deadline ?? "",
-    creators_needed: c?.creators_needed?.toString() ?? "1",
+    creators_needed: c?.creators_needed ?? 1,
     usage_rights: c?.usage_rights ?? [],
     territory: c?.territory ?? "Worldwide",
     usage_duration: c?.usage_duration ?? "12_months",
@@ -100,6 +101,7 @@ export function CampaignForm({ campaign }: { campaign?: CampaignCard }) {
   const qc = useQueryClient();
   const lookups = useLookups();
   const [v, setV] = useState<FormState>(() => fromCampaign(campaign));
+  const hiredCount = campaign?.stats?.selected ?? 0;
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<"draft" | "active" | null>(null);
   const [aiTick, setAiTick] = useState(0);
@@ -125,7 +127,7 @@ export function CampaignForm({ campaign }: { campaign?: CampaignCard }) {
       budget_max: d.budget_max?.toString() ?? "",
       currency: d.currency,
       deadline: d.deadline ?? "",
-      creators_needed: String(d.creators_needed),
+      creators_needed: d.creators_needed,
       usage_rights: d.usage_rights,
       territory: d.territory,
       usage_duration: d.usage_duration,
@@ -238,7 +240,9 @@ export function CampaignForm({ campaign }: { campaign?: CampaignCard }) {
             <MultiSelect label="Languages" options={o(L.languages)} value={v.language_ids} onChange={(x) => set("language_ids", x)} />
           </Field>
           <Field label="Creators needed" htmlFor="n" error={errors.creators_needed}>
-            <Input id="n" type="number" min={1} max={50} value={v.creators_needed} onChange={(e) => set("creators_needed", e.target.value)} />
+            {/* A target, not a cap: more creators can be hired later. Editing can't go below the creators already hired. */}
+            <Stepper id="n" value={v.creators_needed} onChange={(n) => set("creators_needed", n)} min={Math.max(1, hiredCount)} max={100}
+              hint={hiredCount > 0 ? `${hiredCount} already hired — the target can't be lower` : "A target — you can hire more later"} />
           </Field>
         </div>
       </Section>

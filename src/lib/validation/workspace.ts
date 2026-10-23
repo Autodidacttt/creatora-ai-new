@@ -53,7 +53,7 @@ export const studioBriefSchema = z.object({
     ai_disclosure_required: z.boolean(),
     notes: z.string().trim().max(600),
   }),
-  creators_needed: z.number().int().min(1).max(50),
+  creators_needed: z.number().int().min(1).max(100),
 });
 export type StudioBrief = z.infer<typeof studioBriefSchema>;
 
@@ -102,10 +102,6 @@ export type GuidelineInput = z.infer<typeof guidelineSchema>;
 // ---------------------------------------------------------------------------
 // Hiring, sprints, payments
 // ---------------------------------------------------------------------------
-export const hireSchema = z.object({
-  amount: z.coerce.number().int("Whole amounts only").min(1, "Enter the agreed amount").max(10_000_000),
-  currency: z.enum(CURRENCIES),
-});
 
 export const sprintSchema = z.object({
   title: z.string().trim().min(3, "At least 3 characters").max(140),
@@ -115,6 +111,7 @@ export const sprintSchema = z.object({
   currency: z.enum(CURRENCIES),
   hours: z.coerce.number().int().min(2).max(72).default(48),
   aspect_ratios: z.array(z.enum(STUDIO_ASPECTS)).min(1, "Pick at least one format"),
+  creators_needed: z.number().int().min(1).max(100).default(1),
 });
 export type SprintInput = z.infer<typeof sprintSchema>;
 

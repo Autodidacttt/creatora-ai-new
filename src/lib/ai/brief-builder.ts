@@ -67,7 +67,7 @@ const aiOutput = z.object({
   budget_max: z.number().int().min(0).nullable().optional(),
   currency: z.enum(CURRENCIES),
   deadline_days: z.number().int().min(1).max(365).nullable().optional(),
-  creators_needed: z.number().int().min(1).max(50),
+  creators_needed: z.number().int().min(1).max(100),
   usage_rights: z.array(z.enum(["organic_social", "paid_social", "broadcast", "ooh", "web", "internal"])).default([]),
   territory: z.string().min(1).max(80),
   usage_duration: z.enum(["3_months", "6_months", "12_months", "24_months", "perpetual"]),
