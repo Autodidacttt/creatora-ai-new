@@ -348,9 +348,16 @@ async function seedCampaigns() {
   check(await supabase.from("campaign_creators").upsert(selections.map(([c, cr, status, amount, paidDaysAgo]) => ({
     campaign_id: seedId(c), creator_id: uid(cr), status, created_at: daysAgo(70), hired_at: daysAgo(70),
     completed_at: paidDaysAgo === null ? null : daysAgo(paidDaysAgo), status_changed_at: paidDaysAgo === null ? daysAgo(70) : daysAgo(paidDaysAgo),
-    agreed_amount: amount, currency: campaigns.find((x) => x.key === c)!.currency,
+    // Open hires agree their fee by negotiating (seed/workspace.ts ensureHired); finished ones carry the fee they were paid
+    agreed_amount: status === "completed" ? amount : null, currency: campaigns.find((x) => x.key === c)!.currency,
     payment_status: paidDaysAgo === null ? "pending" : "paid", paid_at: paidDaysAgo === null ? null : daysAgo(paidDaysAgo),
   })), { onConflict: "campaign_id,creator_id", ignoreDuplicates: true }), "selections");
+  // Every hire comes from an accepted final proposal (0022); the finished history gets its record here
+  check(await supabase.from("proposals").upsert(selections.filter(([, , status]) => status === "completed").map(([c, cr, , amount]) => ({
+    campaign_id: seedId(c), creator_id: uid(cr), version: 1, price: amount, currency: campaigns.find((x) => x.key === c)!.currency,
+    terms: { deliverables: "As described in the brief", deadline: null, revisions: 2, usage_rights: ["organic_social", "paid_social"] },
+    status: "accepted", sent_at: daysAgo(71), decided_at: daysAgo(70), created_at: daysAgo(71),
+  })), { onConflict: "campaign_id,creator_id,version", ignoreDuplicates: true }), "accepted proposals for past hires");
 
   check(await supabase.from("saved_opportunities").upsert(savedOpportunities.map(([cr, c]) => ({
     creator_id: uid(cr), campaign_id: seedId(c),

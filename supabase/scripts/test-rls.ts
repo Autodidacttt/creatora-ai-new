@@ -219,6 +219,8 @@ async function main() {
       check("creators cannot see a draft brief", (seeDraft.data?.length ?? 0) === 0);
       const earlyApply = await fresh.c.from("campaign_applications").insert({ campaign_id: draft.data!.id, creator_id: fresh.id, pitch: "Applying before publication" });
       check("cannot apply to a draft brief", !!earlyApply.error);
+      const earlyShortlist = await brand.c.from("campaign_shortlists").insert({ campaign_id: draft.data!.id, creator_id: fresh.id, added_by: brand.id });
+      check("cannot shortlist on a draft brief (publish first)", !!earlyShortlist.error && /Publish the brief first/.test(earlyShortlist.error.message), earlyShortlist.error?.message);
       await brand.c.from("campaigns").update({ status: "active" }).eq("id", draft.data!.id);
       const app = await fresh.c.from("campaign_applications").insert({ campaign_id: draft.data!.id, creator_id: fresh.id, pitch: "I would love to work on this brief" }).select("id, status").single();
       check("creator can apply once the brief is active", app.data?.status === "pending", app.error?.message);
@@ -280,9 +282,22 @@ async function main() {
 
       const direct = await brand.c.from("campaign_creators").insert({ campaign_id: draft.data!.id, creator_id: fresh.id, agreed_amount: 750, currency: "USD", payment_status: "paid", paid_at: new Date().toISOString() });
       check("hires can't be written directly (only through the workflow RPCs)", !!direct.error);
-      const hire = await brand.c.rpc("hire_creator", { p_campaign: draft.data!.id, p_creator: fresh.id, p_amount: 750 });
+      const directHire = await brand.c.rpc("hire_creator", { p_campaign: draft.data!.id, p_creator: fresh.id, p_amount: 750 });
+      check("direct hire with a client-supplied price is rejected", !!directHire.error && /Direct hiring is disabled/.test(directHire.error.message), directHire.error?.message);
+      // The only hire path: negotiate → agreed offer → creator's final proposal → brand accepts
+      const conv = await brand.c.rpc("start_negotiation", { p_campaign: draft.data!.id, p_creator: fresh.id });
+      const terms = { deliverables: "2 reels", deadline: null, revisions: 1, usage_rights: ["organic_social"] };
+      const offer = await brand.c.rpc("send_offer", { p_conversation: conv.data!, p_price: 750, p_terms: terms });
+      check("an outsider can't accept the offer", !!(await maya.c.rpc("accept_offer", { p_message: offer.data! })).error);
+      await fresh.c.rpc("accept_offer", { p_message: offer.data! });
+      const proposal = await fresh.c.rpc("send_final_proposal", { p_conversation: conv.data!, p_note: null });
+      check("other brands can't see the proposal", ((await atelier.c.from("proposals").select("id").eq("id", proposal.data!)).data?.length ?? 0) === 0);
+      check("other brands can't accept it", !!(await atelier.c.rpc("hire_creator", { p_proposal: proposal.data! })).error);
+      const hire = await brand.c.rpc("hire_creator", { p_proposal: proposal.data! });
       const career = (await fresh.c.rpc("dashboard_career", { p_creator: fresh.id, ...range })).data as { hired: number; earned_in_range: number } | null;
       check("a real hire changes the career figures (earnings only move on released payment)", !hire.error && career?.hired === 1 && career?.earned_in_range === 0, hire.error?.message);
+      const hiredRow = await adminApi.from("campaign_creators").select("agreed_amount").eq("id", hire.data!).single();
+      check("the hire uses the final proposal's price", hiredRow.data?.agreed_amount === 750);
     } finally {
       await adminApi.auth.admin.deleteUser(brandUser.data.user!.id);
     }

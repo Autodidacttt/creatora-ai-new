@@ -3,11 +3,45 @@
 Creatora is a social marketplace where AI filmmakers, animators and generative artists show their work and get hired by brands and agencies.
 
 - **Creators** publish portfolios that show the AI tools, models and workflow behind every piece.
-- **Brands** write structured briefs, sometimes drafted by AI from a single sentence. They find creators with precise filters, swipe through ranked matches, and hire through a shortlist → select pipeline.
+- **Brands** write structured briefs, sometimes drafted by AI from a single sentence. They find creators with precise filters, swipe through ranked matches, shortlist, and hire by negotiating terms in chat and accepting the creator's final proposal.
 
 All data comes from Supabase and every action persists. New accounts start completely empty.
 
 > Also in this repo: [`DATA_MODEL.md`](DATA_MODEL.md) (submission data-model note) · [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md) (3-minute demo path)
+
+---
+
+## Recent changes
+
+### 2026-10-23: Negotiated hiring, published-only shortlists, creator targets, collaborators
+
+Migration: `supabase/migrations/0022_negotiated_hiring_collaborators.sql`. Every rule below is enforced in the database (RPCs, triggers, RLS), not only in the UI.
+
+**Hiring (no more direct hires).**
+1. *Hire* opens (or creates) the brand ↔ creator conversation for that brief. A pinned card shows the brief summary, the creator's proposed price and the terms status (open → negotiating → agreed → final proposal sent → hired). Nobody is hired yet.
+2. Both sides negotiate with structured **offers**: price, deliverables, deadline, revisions and usage rights, with *Accept* / *Counter* buttons, alongside normal text. Terms are agreed when one side accepts the other's latest offer.
+3. The creator then sends a **final proposal**. It is a new version built server-side from the agreed offer, and older versions become `superseded`.
+4. The brand clicks **Accept & hire**. Only then does `hire_creator(p_proposal)` run, with the proposal's price and terms; the client never sends a price. It opens the same internal demo escrow as before (funded after approval, the brand releases payment).
+
+The old `hire_creator(campaign, creator, amount, currency)` now always refuses. A new offer re-opens agreed terms and supersedes a waiting proposal. Each step notifies the other side (notification type `proposal`). Existing hires were backfilled as accepted v1 proposals. Legacy hires that never had a fee agree one the same way, and accepting the proposal opens their escrow.
+
+**Shortlists** need a published (`active`) brief: a trigger plus the insert policy. Draft, completed or closed briefs block new shortlists, and the UI disables the button with "Publish the brief first" and a *Publish brief* shortcut. Existing shortlists stay; ones added while a brief was still a draft are flagged (`campaign_shortlists.added_while_draft`). Swipe *Save* bookmarks are unaffected.
+
+**Creator count is a target, not a cap.** It ranges from 1 to 100, and brands can hire beyond it ("6 of 5 hired", *Add more creators*). Editing can't lower it below the creators already hired (trigger `campaigns_target_floor`). One reusable `Stepper` (`src/components/ui/stepper.tsx`) edits it in the brief form, the Studio and the sprint form: [−] [number] [+], typed input that commits on blur/Enter, and arrow / Page / Home / End keys.
+
+**Swipe** is its own item in the brand navigation (desktop rail and mobile bar). It is the same `/swipe` page that Discover and briefs link to.
+
+**Collaborators.**
+- Each brief card on the brand dashboard shows "N Collaborator(s)". N counts hired creators that aren't cancelled or rejected, from the `campaign_stats` view.
+- Clicking it opens a panel with members, status, chats, the group chat and tasks.
+- When a second creator is hired, one **group conversation** per brief is created automatically (`conversations.type = 'group'`). Later hires join it and removed creators leave, each with a system message.
+- **Tasks** (`campaign_tasks`): the brand assigns a task to one creator (posted in their brief chat) or to the whole group (posted in the group chat). Creators see their tasks on their project page and can update the status. RLS limits visibility to the brand and the assigned or hired creators.
+
+New tables: `proposals`, `campaign_tasks`. New columns: `conversations.type` and `conversations.campaign_id`; `messages.payload` (`messages.kind` is the message type: `user` = text, `system`, `offer`, `proposal`, `task`); `campaign_shortlists.added_while_draft`.
+
+New RPCs: `start_negotiation`, `send_offer`, `accept_offer`, `send_final_proposal`, `reject_proposal`, `hire_creator(p_proposal)`, `get_negotiation`, `get_conversation`, `get_campaign_collaborators`, `create_campaign_task`, `update_campaign_task_status`, `delete_campaign_task`.
+
+New components: `chat/negotiation.tsx`, `workspace/hire-button.tsx` (replaces the hire dialog), `workspace/collaborators.tsx`, `campaign/shortlist-gate.tsx`, `ui/stepper.tsx`. New test: `npm run test:hiring`.
 
 ---
 
@@ -126,6 +160,7 @@ npm run dev             # http://localhost:3000
 npm run typecheck && npm run lint && npm run build
 npm run test:rls        # permission + integrity checks against your Supabase project (needs seed)
 npm run test:workspace  # brand workspace acceptance flow against a running app (APP_URL, default localhost:3000)
+npm run test:hiring     # negotiated hiring, shortlist rule, creator targets, group chat + tasks (throwaway accounts)
 ```
 
 `test:workspace` uses throwaway accounts and deletes them afterwards. It covers:
@@ -178,6 +213,8 @@ Browser ──(publishable key + user JWT, RLS)──▶ Supabase Postgres / Sto
   - Postgres RLS on every table. Column-level grants stop users writing role, verification, suspension or counters.
   - Server checks in layouts and route handlers.
 - **Business logic lives in SQL.** Search, diagnostics, ranking, swipe deck, feed, opportunities, inbox, dashboards and admin lists are Postgres functions (`supabase/migrations/0006_rpcs.sql`, `0010_read_rpcs.sql`). They return ready-to-render JSON, and the scoring is transparent and inspectable.
+- **Hiring is a negotiation, enforced in SQL** (`0022_negotiated_hiring_collaborators.sql`). Offers, final proposals and the hire are security-definer RPCs that check who may act and when. Clients can't insert hires, proposals or structured messages, and the hire price always comes from the accepted proposal.
+- **Conversations** are a plain DM per pair (`dm_key "a:b"`), one 1:1 chat per brief and pair for hiring (`dm_key "c:campaign:a:b"`), and one group per brief (`type = 'group'`). Project updates for a hire are posted in its brief chat. Group membership follows `campaign_creators` through a trigger.
 - **Counts and notifications are triggers** (`0005_functions_triggers.sql`). They're never computed or stored by the client.
 - **Data access** goes through `src/services/*`, one file per domain. Components never query directly. The same service functions run with the browser client (TanStack Query) or the server client.
 
@@ -191,7 +228,11 @@ Browser ──(publishable key + user JWT, RLS)──▶ Supabase Postgres / Sto
 | Change search behaviour or filters | `creator_search_flags` / `search_creators` (SQL), `src/services/discovery.ts`, `src/components/discovery/*` |
 | Change brief fields | `0003_campaigns.sql` → `src/lib/validation/schemas.ts` (`campaignSchema`) → `src/components/campaign/campaign-form.tsx` |
 | Change the AI brief prompt or schema | `src/lib/ai/brief-builder.ts` |
-| Add a notification type | `0004` check constraint + trigger in `0005` + text and links in `src/services/notifications.ts` |
+| Add a notification type | `0004` check constraint (latest version in `0022`) + trigger in `0005` + text and links in `src/services/notifications.ts` |
+| Change the hiring negotiation (offer terms, who may act, states) | RPCs in `0022_negotiated_hiring_collaborators.sql` (`send_offer`, `accept_offer`, `send_final_proposal`, `hire_creator`, `private.clean_terms`) → `src/services/messaging.ts` → `src/components/chat/negotiation.tsx` |
+| Change who can shortlist / the creator target rules | Triggers `shortlists_require_published` and `campaigns_target_floor` in `0022`; UI gate in `src/components/campaign/shortlist-gate.tsx` |
+| Group chats, collaborators, tasks | `private.sync_campaign_group`, `get_campaign_collaborators`, `*_campaign_task*` RPCs in `0022` → `src/services/workspace.ts` → `src/components/workspace/collaborators.tsx` |
+| Number inputs with − / + | `src/components/ui/stepper.tsx` |
 | Change permissions | Row rules: `0007_rls.sql`. Table/column privileges for API roles: `0011_api_grants.sql` (new Supabase projects grant nothing by default, so every new table needs RLS **and** explicit grants). Then extend `supabase/scripts/test-rls.ts` |
 | Restyle | Tokens in `src/app/globals.css`, primitives in `src/components/ui/*` |
 | Navigation | `src/config/nav.ts` |
@@ -213,7 +254,7 @@ src/
 supabase/
   migrations/     schema, triggers, RPCs, RLS, storage, lookups
   seed/           idempotent demo seed (npm run seed)
-  scripts/        migrate · gen-types · test-rls
+  scripts/        migrate · gen-types · test-rls · test-workspace · test-hiring
 ```
 
 ## Security notes

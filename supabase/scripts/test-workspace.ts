@@ -107,11 +107,19 @@ async function main() {
     const card = (await maya.c.rpc("get_campaign", { p_id: campaignId })).data as Record<string, unknown> | null;
     check("studio inputs (source idea) are hidden from other users", !!card && !("source_idea" in card));
 
-    console.log("\n▸ Hire → escrow opened (test mode)");
+    console.log("\n▸ Hire → negotiated in chat → final proposal accepted → escrow opened (test mode)");
     const direct = await brand.c.from("campaign_creators").insert({ campaign_id: campaignId, creator_id: creator.id, status: "completed" } as never);
     check("hires can't be inserted directly", !!direct.error);
-    const hire = await brand.c.rpc("hire_creator", { p_campaign: campaignId, p_creator: creator.id, p_amount: 1200, p_currency: "USD" });
-    check("brand hires the creator", !hire.error && !!hire.data, hire.error?.message);
+    const directHire = await brand.c.rpc("hire_creator", { p_campaign: campaignId, p_creator: creator.id, p_amount: 1200, p_currency: "USD" });
+    check("direct hire (client-supplied price) is rejected", !!directHire.error);
+    const conv = (await brand.c.rpc("start_negotiation", { p_campaign: campaignId, p_creator: creator.id })).data as string;
+    const offerTerms = { deliverables: "6 stills + 2 reels", deadline: null, revisions: 2, usage_rights: ["organic_social"] };
+    const offer = (await creator.c.rpc("send_offer", { p_conversation: conv, p_price: 1200, p_terms: offerTerms })).data as string;
+    check("brand accepts the creator's offer", !(await brand.c.rpc("accept_offer", { p_message: offer })).error);
+    const proposal = await creator.c.rpc("send_final_proposal", { p_conversation: conv, p_note: "Ready" });
+    check("creator sends the final proposal", !proposal.error, proposal.error?.message);
+    const hire = await brand.c.rpc("hire_creator", { p_proposal: proposal.data as string });
+    check("brand accepts & hires", !hire.error && !!hire.data, hire.error?.message);
     const projectId = hire.data as string;
     const esc = await creator.c.from("escrow_payments").select("status, amount, platform_fee").eq("campaign_creator_id", projectId).single();
     check("creator sees the unfunded escrow", esc.data?.status === "unfunded" && esc.data.amount === 1200 && esc.data.platform_fee === 96);
