@@ -13,6 +13,30 @@ All data comes from Supabase and every action persists. New accounts start compl
 
 ## Recent changes
 
+### 2026-10-24: Astral theme and a scroll-driven landing page
+
+Visual-only change: no routes, data, permissions, database or flows were touched (`test:rls` 103/103, `test:hiring` 49/49, `test:workspace` 97/97 after the change).
+
+- **Astral theme.** The default theme is now *Night*: indigo-ink surfaces, hairline starlight borders, nebula washes and a drifting starfield, with amber as the single "star glow" accent. *Paper* (light) is the quiet version of the same design. Display type is Inter 600 with tight tracking, and the Bricolage font was dropped (−41 KiB of fonts).
+- **Effects layer** (`src/components/astral/`): starfield and constellation canvases, glow cards, magnetic buttons, scroll reveals, parallax, a scroll-progress bar, the constellation loader, Lenis smooth scrolling (landing only) and route transitions. See [Design system / astral theme](#design-system--astral-theme).
+- **Intensity by area:** rich on the landing page, medium on auth and onboarding, low in the creator/brand app, and minimal (still) in admin.
+- **Settings → Appearance:** Theme (Night / Paper / System) and **Effects (Full / Reduced / Off)**, saved per browser. OS reduced-motion caps effects at *Reduced*.
+- **Landing page rebuilt** as a scroll story:
+  - hero with an interactive creator/brand constellation
+  - pinned 6-step "How it works"
+  - six feature chapters, each with an animated geometric illustration and a preview built from the real components (score breakdown, trust badges, project stepper, escrow chips)
+  - a constellation of real creators (`search_creators`)
+  - trust section
+  - live counters from `public_stats` (with skeleton, retry and fallback)
+  - final CTA, section anchors and a scroll-progress bar
+- **Primitives restyled once, inherited everywhere:**
+  - glass, buttons, pill CTAs, chips, tabs, switches, inputs
+  - dialogs, menus and popovers get a soft depth entrance; toasts are restyled too
+  - skeletons shimmer, the infinite-scroll loader is a constellation, empty states carry a constellation mark
+  - nav rail and mobile bar get the glow; creator, campaign and project cards light up on hover
+  - charts get a faint glow line, with the chart palette re-validated on the new surfaces
+- **Accessibility fixes:** the body background no longer hides the backdrop. The new `--amber-ink` token gives amber text AA contrast on paper (4.6:1), where it was 1.8:1 before.
+
 ### 2026-10-24: Account verification overhaul (phone OTP, ID, company verification, brand types)
 
 Migration `0026_identity_company_verification.sql` (expand step, safe with the previous app). Rollback: `supabase/rollback/0026_down.sql`, captured from production. Contract step `0027_drop_tool_workflow_verification.sql` (applied once nothing read them) deletes the old tool / workflow verification rows and drops `verifications.tool_id` / `post_id`. The rows are kept in `private.verifications_retired_0027`, which clients can't read. Rollback: `supabase/rollback/0027_down.sql`.
@@ -180,7 +204,7 @@ New components: `chat/negotiation.tsx`, `workspace/hire-button.tsx` (replaces th
 | **Escrow (test mode) & licence records** | An internal escrow ledger (unfunded → funded → released / refunded / disputed) with an append-only `payment_events` log, labelled "Test mode, no real money moves". The brand gets clean originals only after approval **and** release of the payment, through a server route that returns a 60-second signed URL (clients have no read access to the originals bucket). Release completes the project, updates creator earnings, and issues a PDF licence record (terms snapshot, declared tools, asset SHA-256 hashes) that anyone can check at `/verify/{id}`. The creator gets an earnings receipt PDF. |
 | **Admin** | Platform stats, sign-ups chart and top tools. Users (verify or suspend), verification queue, content removal, report resolution, campaigns and audit log. |
 
-Design follows the reference brief's glassmorphism: frosted panels, one amber accent, white pill CTAs with an amber arrow, a floating icon rail with bottom tabs on mobile, notched stat tiles, and line-art backdrops. Light and dark themes are included. Every screen has skeleton, empty, error-with-retry and toast states. Likes, saves and follows update optimistically.
+Design is the **astral** theme (see [Design system / astral theme](#design-system--astral-theme)). It keeps the glass panels, single amber accent, pill CTAs with an amber arrow, floating icon rail with bottom tabs on mobile and notched stat tiles. These sit on a night-sky backdrop with a starfield and constellation details, plus a quieter paper-and-ink light theme. Every screen has skeleton, empty, error-with-retry and toast states. Likes, saves and follows update optimistically.
 
 ---
 
@@ -326,6 +350,72 @@ Run `npm run seed` to also seed the workspace demo states:
 
 ---
 
+## Design system / astral theme
+
+A night sky behind the content, never in front of it. Effects are decorative only: `aria-hidden`, `pointer-events: none`, behind the page (`-z-10`). Content always wins.
+
+### Tokens (`src/app/globals.css`)
+
+| Token | Night (default, `.dark`) | Paper (light) | Used for |
+|---|---|---|---|
+| `--bg` / `--bg-2` | `#0a0c1b` / `#10132b` | `#f6f4ef` / `#eeedf5` | Page and sky gradient |
+| `--ink` / `--ink-2` / `--ink-3` | starlight `#eef0fb` / `#b4b9d6` / `#8f95b9` | indigo ink `#16182e` / `#4a4e6b` / `#666a86` | Text (all ≥ 4.5:1 on every surface) |
+| `--card`, `--glass`, `--glass-strong`, `--glass-border`, `--glass-hi` | indigo glass, hairline `rgba(170,180,255,.13)` | white glass, ink hairline | Panels (`.glass`, `.glass-strong`) |
+| `--amber`, `--amber-2`, `--on-amber` | unchanged | unchanged | The one accent ("star glow") fills |
+| `--amber-ink` | `#ffc02e` | `#9a6200` | Amber **text and icons** (`text-amber-ink`, `.star-text`); AA on paper |
+| `--glow`, `--glow-rgb` | amber glow | darker amber glow | Shadows/halos (`shadow-[0_0_20px_var(--glow)]`) and canvas highlights |
+| `--star-rgb` | `226,230,255` | `30,33,66` | Starfield / constellation colour (canvas reads it live, follows theme switches) |
+| `--nebula-1..3` | violet, blue, amber washes | faint lavender, blue, amber | Backdrop gradients |
+| `--chart-1..3`, `--chart-glow` | validated on `#141834` | validated on white | Charts (glow line in Night only) |
+
+Utilities: `.display` (Inter 600, −0.04em), `.eyebrow`, `.star-text`, `.glow-hover` (hairline + glow on hover, no movement), `.shimmer`, `.fx-motion`, `.fx-only-full`, `.fx-decor`, `.fx-pin` / `.fx-stack`.
+
+### Components (`src/components/astral/`)
+
+| Component | What it does |
+|---|---|
+| `effects.tsx` | `EffectsProvider`, `useEffects()` (`pref`, effective `level`, `setPref`), `useFinePointerFx()`, `EFFECTS_SCRIPT` (sets `<html data-effects>` before first paint) |
+| `canvas-loop.ts` | Shared 2D-canvas driver: DPR capped at 1.5, ResizeObserver, theme-aware colours, rAF with an fps cap, pauses when the tab is hidden or the canvas is offscreen (IntersectionObserver). Static single frame when not animating |
+| `starfield-canvas.tsx` | `StarfieldCanvas`: drifting, twinkling stars (density scales with area, halved on phones), optional pointer parallax and shooting stars |
+| `constellation-network.tsx` | `ConstellationNetwork`: creator (●) and brand (◆) nodes, edges light up near the cursor or a tap. Lazy-loaded on the landing page |
+| `atmosphere.tsx` | `Atmosphere`: the fixed backdrop (nebula + starfield + orbit line-art), and **`SKY`, the per-area intensity table** |
+| `interactive.tsx` | `GlowCard` (cursor glow + optional tilt), `MagneticButton`, `ScrollReveal`, `Parallax`, `ScrollProgress`, `SmoothScroll` (Lenis), `PageTransition`, `SPRING` |
+| `scroll-section.tsx` | `ScrollSection`: an anchored section with a revealed eyebrow, title and lede |
+| `ornaments.tsx` | `OrbitLines`, `ConstellationMark` (empty states), `AstralLoader` (constellation loader) |
+| `appearance-settings.tsx` | Settings → Appearance card |
+
+Landing sections live in `src/components/landing/*` (`hero`, `how-it-works`, `feature-chapters` + `geo` + `previews`, `match-constellation`, `trust`, `live-stats`, `final-cta`).
+
+### Tuning intensity
+
+Edit `SKY` in `src/components/astral/atmosphere.tsx`. The area comes from the route (`skyArea()`):
+
+| Area | Routes | Default |
+|---|---|---|
+| `landing` | `/` | dense (2.2), drifting, twinkling, pointer parallax, shooting stars, 60 fps |
+| `auth` | `/login`, `/signup`, `/onboarding`, `/auth/*`, `/verify*` | medium, 30 fps, orbits |
+| `app` | creator + brand app | sparse (0.9), slow, dimmed (0.65), 24 fps, orbits |
+| `admin` | `/admin/*` | very sparse, **still** (no animation) |
+
+The hero network's node count is set in `constellation-network.tsx` (`density`, capped at 86 nodes on desktop and 34 on phones). Card tilt and magnetic strength are props on `GlowCard` and `MagneticButton`.
+
+### How the effects toggle works
+
+1. **Settings → Appearance** stores `creatora-effects` = `full` | `reduced` | `off` in `localStorage` (per browser; nothing goes to the database).
+2. The effective level is the user's choice capped by `prefers-reduced-motion` (OS reduced motion turns *full* into *reduced*).
+3. An inline script in `src/app/layout.tsx` writes it to `<html data-effects>` before first paint, so the CSS switches never flash or shift the layout. `EffectsProvider` keeps it in sync, including across tabs.
+4. What each level does:
+   - **Full:** everything.
+   - **Reduced:** a static starfield and constellation frame, opacity-only reveals and route transitions, no parallax, tilt, magnetic pull, Lenis or pinning (the "How it works" sequence becomes a stacked list), and Framer Motion transforms off (`MotionConfig reducedMotion="always"`).
+   - **Off:** no canvases or decorative SVG motion; plain night or paper surfaces.
+
+### Scrolling rules
+
+- Lenis runs **only on the landing page**. It is wheel-only (touch and keyboard stay native), and a scroll key pressed mid-glide cancels the glide.
+- Lenis ignores dialogs, menus, listboxes, Radix poppers and anything inside `[data-lenis-prevent]`.
+- The app (feeds, swipe/reels snap scrollers, chat, modals) never mounts it.
+- Pinning happens only at ≥ 1024 px with full effects (`.fx-pin` / `.fx-stack` in `globals.css`).
+
 ## Architecture
 
 ```
@@ -368,7 +458,9 @@ Browser ──(publishable key + user JWT, RLS)──▶ Supabase Postgres / Sto
 | Group chats, collaborators, tasks | `private.sync_campaign_group`, `get_campaign_collaborators`, `*_campaign_task*` RPCs in `0022` → `src/services/workspace.ts` → `src/components/workspace/collaborators.tsx` |
 | Number inputs with − / + | `src/components/ui/stepper.tsx` |
 | Change permissions | Row rules: `0007_rls.sql`. Table/column privileges for API roles: `0011_api_grants.sql` (new Supabase projects grant nothing by default, so every new table needs RLS **and** explicit grants). Then extend `supabase/scripts/test-rls.ts` |
-| Restyle | Tokens in `src/app/globals.css`, primitives in `src/components/ui/*` |
+| Restyle | Tokens in `src/app/globals.css`, primitives in `src/components/ui/*`, effects in `src/components/astral/*` (see [Design system](#design-system--astral-theme)) |
+| Effect intensity per area | `SKY` in `src/components/astral/atmosphere.tsx` |
+| Landing page sections / copy | `src/app/page.tsx` (data) → `src/components/landing/*` |
 | Navigation | `src/config/nav.ts` |
 | Dashboard metrics / formulas | `supabase/migrations/0014_creator_dashboard.sql`, `0015_dashboard_engagement_series.sql` (`dashboard_*` RPCs) |
 | Dashboard UI / charts | `src/components/dashboard/*` (chart palette tokens `--chart-1..3` in `globals.css`, validated for light and dark) |
@@ -380,7 +472,7 @@ Browser ──(publishable key + user JWT, RLS)──▶ Supabase Postgres / Sto
 ```
 src/
   app/            (auth) login/signup · (onboarding) · (app) creator+brand screens · (admin) · api/
-  components/     ui/ layout/ profile/ posts/ discovery/ campaign/ swipe/ chat/ feed/ notifications/ admin/
+  components/     astral/ (theme effects) landing/ ui/ layout/ profile/ posts/ discovery/ campaign/ swipe/ chat/ feed/ notifications/ admin/
   features/       session context
   services/       data access (profiles, posts, social, discovery, campaigns, messaging, notifications, verification, admin)
   lib/            supabase/ (browser, server, admin, proxy) · ai/ · validation/ · utils/
