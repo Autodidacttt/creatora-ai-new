@@ -145,6 +145,8 @@ async function main() {
     check("other creator registering files on this draft → 404", (await api(`/api/submissions/${s1}/files`, { body: { kind: "upload", path: p1, name: "x.jpg", mime: "image/jpeg", position: 0 }, cookie: maya.cookie })).status === 404);
     const f1res = await api(`/api/submissions/${s1}/files`, { body: { kind: "upload", path: p1, name: "hero-v1.jpg", mime: "image/jpeg", position: 0 }, cookie: creator.cookie });
     const f1 = (await f1res.json()) as { file?: { id: string; preview_kind: string; sha256: string; preview_path: string; storage_path: string; palette: string[] } };
+    // The only way to a clean file: GET /api/submissions/:id/files/:fileId/original (60-second signed URL)
+    const original = (sid: string, fid: string, cookie?: string) => api(`/api/submissions/${sid}/files/${fid}/original`, { cookie });
     check("server builds a watermarked preview", f1res.status === 200 && f1.file?.preview_kind === "image_watermark" && !!f1.file.preview_path, `${f1res.status}`);
     check("server records the SHA-256 of the original", f1.file?.sha256 === sha(orig1));
     check("palette extracted deterministically", (f1.file?.palette ?? []).some((h) => h.toUpperCase().startsWith("#D")), JSON.stringify(f1.file?.palette));
@@ -175,7 +177,16 @@ async function main() {
     const prevBuf = prevRes ? Buffer.from(await prevRes.arrayBuffer()) : Buffer.alloc(0);
     check("preview is a JPEG that differs from the original", prevRes?.ok === true && sha(prevBuf) !== sha(orig1));
     const origEarly = await brand.c.storage.from("submissions").createSignedUrl(f1.file!.storage_path, 60);
-    check("brand can't get the original before approval + funding", !!origEarly.error);
+    check("brand can't sign the original straight from storage", !!origEarly.error);
+    check("download route: brand before approval → 403", (await original(s1, f1.file!.id, brand.cookie)).status === 403);
+    check("creator can't sign their original from storage either (route only)", !!(await creator.c.storage.from("submissions").createSignedUrl(f1.file!.storage_path, 60)).error);
+    const own = await original(s1, f1.file!.id, creator.cookie);
+    const ownUrl = ((await own.json()) as { url?: string }).url;
+    check("creator downloads their own original via the route", own.status === 200 && !!ownUrl && sha(Buffer.from(await (await fetch(ownUrl!)).arrayBuffer())) === sha(orig1));
+    const brandView = (await brand.c.rpc("get_project", { p_project: projectId })).data as { submissions: { files: Record<string, unknown>[] }[] };
+    check("no clean-file path in the brand's project data", brandView.submissions.every((s) => s.files.every((f) => !("storage_path" in f))));
+    check("clients can't select the original's path column", !!(await brand.c.from("submission_files").select("storage_path").eq("submission_id", s1)).error
+      && !!(await creator.c.from("submission_files").select("storage_path").eq("submission_id", s1)).error);
     const foreignPrev = await orbitone.c.storage.from("submission-previews").createSignedUrl(f1.file!.preview_path, 60);
     check("another brand can't get even the preview", !!foreignPrev.error);
     check("another brand can't see the submission", ((await orbitone.c.from("submissions").select("id").eq("id", s1)).data?.length ?? 0) === 0);
@@ -191,7 +202,7 @@ async function main() {
     const orig2 = await image("#E0A010");
     const p2 = `${creator.id}/${s2}/original-2.jpg`;
     await creator.c.storage.from("submissions").upload(p2, orig2, { contentType: "image/jpeg" });
-    const f2 = (await (await api(`/api/submissions/${s2}/files`, { body: { kind: "upload", path: p2, name: "hero-v2.jpg", mime: "image/jpeg", position: 0 }, cookie: creator.cookie })).json()) as { file: { storage_path: string; sha256: string } };
+    const f2 = (await (await api(`/api/submissions/${s2}/files`, { body: { kind: "upload", path: p2, name: "hero-v2.jpg", mime: "image/jpeg", position: 0 }, cookie: creator.cookie })).json()) as { file: { id: string; storage_path: string; sha256: string } };
     const sub2 = await api(`/api/submissions/${s2}/submit`, { body: { notes: "Warmer", tools_used: ["Midjourney"], workflow_notes: null, ai_generated_declared: true, commercial_terms_accepted: true }, cookie: creator.cookie });
     check("creator resubmits v2", sub2.status === 200);
     const proj2 = (await creator.c.rpc("get_project", { p_project: projectId })).data as { status: string; submissions: { version: number }[] };
@@ -200,17 +211,27 @@ async function main() {
     const appr = await brand.c.rpc("review_submission", { p_submission: s2, p_decision: "approved" });
     check("brand approves v2", !appr.error, appr.error?.message);
 
-    console.log("\n▸ Approved + funded → originals unlock → release → licence record");
+    console.log("\n▸ Approved + funded: clean files still locked → release → unlocked + licence record");
     check("escrow is still held (funded) after approval", (await brand.c.from("escrow_payments").select("status").eq("campaign_creator_id", projectId).single()).data?.status === "funded");
-    const orig = await brand.c.storage.from("submissions").createSignedUrl(f2.file.storage_path, 60);
-    const origBuf = orig.data ? Buffer.from(await (await fetch(orig.data.signedUrl)).arrayBuffer()) : Buffer.alloc(0);
-    check("approved + funded → brand downloads the clean original", !orig.error && sha(origBuf) === f2.file.sha256);
-    check("v1 original stays locked (not approved)", !!(await brand.c.storage.from("submissions").createSignedUrl(f1.file!.storage_path, 60)).error);
+    const early = await original(s2, f2.file.id, brand.cookie);
+    const earlyBody = (await early.json()) as { url?: string; error?: string };
+    check("approved + funded, not released → 403 'unlocks after the payment is released'", early.status === 403 && !earlyBody.url && /payment is released/.test(earlyBody.error ?? ""), JSON.stringify(earlyBody));
+    check("…and storage refuses the brand's token too", !!(await brand.c.storage.from("submissions").createSignedUrl(f2.file.storage_path, 60)).error);
+    check("another brand → 403", (await original(s2, f2.file.id, orbitone.cookie)).status === 403);
+    check("another creator → 403", (await original(s2, f2.file.id, maya.cookie)).status === 403);
+    check("signed out → 401", (await original(s2, f2.file.id)).status === 401);
     check("creator can't release payment", (await api(`/api/projects/${projectId}/release`, { method: "POST", cookie: creator.cookie })).status === 403);
     const rel = await api(`/api/projects/${projectId}/release`, { method: "POST", cookie: brand.cookie });
     const relBody = (await rel.json()) as { certificate_id?: string; pdf?: boolean };
     check("brand releases payment → licence record issued", rel.status === 200 && /^CRT-/.test(relBody.certificate_id ?? "") && relBody.pdf === true, JSON.stringify(relBody));
     const code = relBody.certificate_id!;
+    const unlocked = await original(s2, f2.file.id, brand.cookie);
+    const unlockedBody = (await unlocked.json()) as { url?: string; expires_in?: number };
+    const origBuf = unlockedBody.url ? Buffer.from(await (await fetch(unlockedBody.url)).arrayBuffer()) : Buffer.alloc(0);
+    check("released → brand downloads the clean original (60 s signed URL)", unlocked.status === 200 && unlockedBody.expires_in === 60 && sha(origBuf) === f2.file.sha256);
+    check("v1 original stays locked (never approved)", (await original(s1, f1.file!.id, brand.cookie)).status === 403);
+    check("storage still refuses direct reads after release (the route is the only way)", !!(await brand.c.storage.from("submissions").createSignedUrl(f2.file.storage_path, 60)).error);
+    check("another brand still → 403 after release", (await original(s2, f2.file.id, orbitone.cookie)).status === 403);
     const pdf = await api(`/api/certificates/${code}`, { cookie: creator.cookie });
     const pdfBuf = Buffer.from(await pdf.arrayBuffer());
     check("creator downloads the licence PDF", pdf.status === 200 && pdf.headers.get("content-type") === "application/pdf" && pdfBuf.subarray(0, 4).toString() === "%PDF");

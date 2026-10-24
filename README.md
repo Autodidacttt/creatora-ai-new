@@ -13,6 +13,35 @@ All data comes from Supabase and every action persists. New accounts start compl
 
 ## Recent changes
 
+### 2026-10-24: Clean files only after the payment is released; no "Create brief" for admins
+
+**Download-gating rule.** A brand gets the clean (un-watermarked) original only if all three hold, checked on the server for every request:
+1. It owns the campaign.
+2. The version is approved.
+3. `escrow.status = 'released'`.
+
+Before that, the brand only gets watermarked previews. Released is final; a refund, dispute or cancellation can only happen before it, so any other escrow state keeps the files locked.
+
+- **The only way to a clean file** is `GET /api/submissions/:id/files/:fileId/original` ([route](src/app/api/submissions/[id]/files/[fileId]/original/route.ts)).
+  - It returns a 60-second signed URL, or `403` with "Clean files unlock after the payment is released". The creator can always download their own upload.
+  - The link expires in a minute, so a leaked URL stops working almost immediately.
+- **Migration `0025_clean_files_after_release.sql`:**
+  - The `submissions` (originals) bucket has no client read policy at all, for brand, creator or admin. Only `submission-previews` stays readable by the two parties.
+  - `can_access_originals` now requires `released`; it was `funded` or `released`.
+  - `submission_files.storage_path` is no longer readable by clients (column grant), and `submission_json` no longer returns it.
+- **UI:** before release the brand sees a disabled **"Unlocks after payment is released"** button.
+  - Updated in `version-card.tsx`, `project-view.tsx`, `payment-card.tsx`, `status.tsx`, the Creative Review page and the submit form.
+  - The draft-file delete route reads the original's path with the service role.
+- **Licence record:** issued by `release_escrow` only, so it already follows the same rule.
+- **Admin "Create brief" removed:**
+  - The profile page renders the briefs section only for brand profiles, so admins no longer get "New brief" or "Create a brief" (`u/[username]/page.tsx`).
+  - `/campaigns` shows its create actions only to brands.
+  - `/api/ai/brief` now accepts brands only.
+  - Brief creation was already brand-only on the server: the `campaigns` insert policy, `/campaigns/new` and `/brand/*` pages, and `/api/studio/*`. Admin moderation pages are unchanged.
+- **Tests:**
+  - `test:workspace` covers the route and direct storage before and after release, other brands and creators, and that no path appears in project data.
+  - `test:rls` covers admins being unable to create briefs or use the brief builder.
+
 ### 2026-10-24: Accept → Hire → Fund, no revisions / invites, AI Creator Finder
 
 Migrations (rules enforced in RPCs, triggers and RLS), applied in two steps:
@@ -106,7 +135,7 @@ New components: `chat/negotiation.tsx`, `workspace/hire-button.tsx` (replaces th
 | **Brand workspace** | The brand's **Campaigns** page is now a dashboard (live counts, shortcuts, activity, deadlines) with three sub-pages. **Campaign Studio** (`/brand/campaigns/studio`) runs Idea (plus an SSRF-guarded server-side link summary) → Zod-validated Gemini brief, editable inline with per-section Regenerate and a manual fallback → reusable Brand DNA guidelines (logo upload with palette suggestions) → ranked creators with invite/shortlist. Drafts autosave, and Publish notifies the best-matching creators. **Creative Review** (`/brand/campaigns/review`) has an inbox with filters, watermarked previews, version switching, compare mode, and Approve / Request revision (feedback required) / Reject. **Hiring & Delivery** (`/brand/campaigns/hiring`) covers 48-hour sprints with a live countdown, candidates with previews and compare, hiring with an agreed fee, and active delivery. |
 | **Creator projects & submissions** | **My projects** tab in Opportunities, plus a project page with the brief, guidelines, deadline, fee, payment status and timeline. Originals upload to a **private** bucket. The server builds watermarked previews (sharp for images; ffmpeg video when available, otherwise watermarked frames), plus a SHA-256 hash and palette. The creator declares AI generation and commercial-use terms, and resubmits as new versions. Every transition is validated in the DB state machine and notifies the other party, with a system message in their chat. |
 | **AI review (background job)** | Runs after each submission (pending/running/done/failed, retry, `ai_job_logs`). Colours and format are measured deterministically. Logo, visual style and typography are Gemini vision checks, labelled AI-assisted. The brand-match score comes only from that checklist. The AI-disclosure check compares the declaration with the brief and never claims to detect AI. Hook, pacing and retention are labelled estimates, with their basis. |
-| **Escrow (test mode) & licence records** | An internal escrow ledger (unfunded → funded → released / refunded / disputed) with an append-only `payment_events` log, labelled "Test mode, no real money moves". The brand gets clean originals through short-lived signed URLs only after approval **and** funding (enforced by storage RLS). Release completes the project, updates creator earnings, and issues a PDF licence record (terms snapshot, declared tools, asset SHA-256 hashes) that anyone can check at `/verify/{id}`. The creator gets an earnings receipt PDF. |
+| **Escrow (test mode) & licence records** | An internal escrow ledger (unfunded → funded → released / refunded / disputed) with an append-only `payment_events` log, labelled "Test mode, no real money moves". The brand gets clean originals only after approval **and** release of the payment, through a server route that returns a 60-second signed URL (clients have no read access to the originals bucket). Release completes the project, updates creator earnings, and issues a PDF licence record (terms snapshot, declared tools, asset SHA-256 hashes) that anyone can check at `/verify/{id}`. The creator gets an earnings receipt PDF. |
 | **Admin** | Platform stats, sign-ups chart and top tools. Users (verify or suspend), verification queue, content removal, report resolution, campaigns and audit log. |
 
 Design follows the reference brief's glassmorphism: frosted panels, one amber accent, white pill CTAs with an amber arrow, a floating icon rail with bottom tabs on mobile, notched stat tiles, and line-art backdrops. Light and dark themes are included. Every screen has skeleton, empty, error-with-retry and toast states. Likes, saves and follows update optimistically.
@@ -213,7 +242,7 @@ npm run ai:embeddings   # build / refresh creator embeddings for the AI Creator 
 
 `test:workspace` uses throwaway accounts and deletes them afterwards. It covers:
 - submit → watermarked preview + AI review → revision → v2 → approve
-- fund → originals unlock → release → licence PDF + public verification → receipt + earnings
+- fund → originals stay locked → release → originals unlock (server route only) → licence PDF + public verification → receipt + earnings
 - sprint deadline enforcement
 - cross-user access being refused
 

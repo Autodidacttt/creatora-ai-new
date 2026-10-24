@@ -110,6 +110,9 @@ async function main() {
     check("non-admins cannot read admin stats", !!statsRpc.error);
     const adminStats = await adm.c.rpc("admin_stats");
     check("admin can read admin stats", !adminStats.error && !!adminStats.data);
+    const adminBrief = await adm.c.from("campaigns").insert({ brand_id: adm.id, title: "Admin brief attempt", description: "Admins moderate briefs, they don't create them." }).select("id");
+    check("admins can't create briefs (only brands)", !!adminBrief.error || (adminBrief.data?.length ?? 0) === 0);
+    if (adminBrief.data?.[0]) await adm.c.from("campaigns").delete().eq("id", adminBrief.data[0].id);
 
     console.log("\n▸ Private data stays private");
     const mayaNotes = await sofia.c.from("notifications").select("id").eq("user_id", maya.id);
@@ -319,6 +322,7 @@ async function main() {
       check("creator calling AI brief builder → 403", (await post("/api/ai/brief", { prompt: "a creator trying to use brand tools" }, sofiaCookie)).status === 403);
       const adminCookie = await cookieFor(adm);
       check("admin with malformed action → 400 (authorized, validated)", (await post("/api/admin", { action: "drop_tables" }, adminCookie)).status === 400);
+      check("admin calling the AI brief builder → 403 (only brands create briefs)", (await post("/api/ai/brief", { prompt: "an admin trying to draft a brief" }, adminCookie)).status === 403);
       check("anonymous link-preview → 401", (await fetch(`${appUrl}/api/link-preview?url=https://youtube.com`)).status === 401);
     }
   } finally {
