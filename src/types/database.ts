@@ -5,6 +5,12 @@ export type Database = {
   __InternalSupabase: { PostgrestVersion: "13" };
   public: {
     Tables: {
+      admin_permissions: {
+        Row: { user_id: string; permission: string; granted_at: string };
+        Insert: { user_id: string; permission: string; granted_at?: string };
+        Update: { user_id?: string; permission?: string; granted_at?: string };
+        Relationships: [];
+      };
       ai_job_logs: {
         Row: { id: number; submission_id: string | null; job: string; status: string; message: string | null; duration_ms: number | null; created_at: string };
         Insert: { submission_id?: string | null; job: string; status: string; message?: string | null; duration_ms?: number | null; created_at?: string };
@@ -41,6 +47,12 @@ export type Database = {
         Update: { id?: number; slug?: string; name?: string; category?: string; vendor?: string | null; sort?: number };
         Relationships: [];
       };
+      app_settings: {
+        Row: { key: string; value: Json; updated_at: string };
+        Insert: { key: string; value: Json; updated_at?: string };
+        Update: { key?: string; value?: Json; updated_at?: string };
+        Relationships: [];
+      };
       audit_logs: {
         Row: { id: number; actor_id: string | null; action: string; target_type: string; target_id: string; meta: Json; created_at: string };
         Insert: { actor_id?: string | null; action: string; target_type: string; target_id: string; meta?: Json; created_at?: string };
@@ -48,9 +60,9 @@ export type Database = {
         Relationships: [];
       };
       brand_details: {
-        Row: { profile_id: string; company_name: string; industry: string | null; company_size: string | null; description: string | null; updated_at: string };
-        Insert: { profile_id: string; company_name: string; industry?: string | null; company_size?: string | null; description?: string | null; updated_at?: string };
-        Update: { profile_id?: string; company_name?: string; industry?: string | null; company_size?: string | null; description?: string | null; updated_at?: string };
+        Row: { profile_id: string; company_name: string; industry: string | null; company_size: string | null; description: string | null; updated_at: string; brand_type: string | null; verification_required: boolean; company_verified_at: string | null };
+        Insert: { profile_id: string; company_name: string; industry?: string | null; company_size?: string | null; description?: string | null; updated_at?: string; brand_type?: string | null; verification_required?: boolean; company_verified_at?: string | null };
+        Update: { profile_id?: string; company_name?: string; industry?: string | null; company_size?: string | null; description?: string | null; updated_at?: string; brand_type?: string | null; verification_required?: boolean; company_verified_at?: string | null };
         Relationships: [];
       };
       brand_guidelines: {
@@ -123,6 +135,24 @@ export type Database = {
         Row: { id: string; post_id: string; user_id: string; body: string; created_at: string };
         Insert: { id?: string; post_id: string; user_id: string; body: string; created_at?: string };
         Update: { id?: string; post_id?: string; user_id?: string; body?: string; created_at?: string };
+        Relationships: [];
+      };
+      company_contact_suggestions: {
+        Row: { id: string; company_verification_id: string; source: string; name: string | null; role: string; source_url: string | null; source_title: string | null; public_business_email: string | null; note: string | null; selected: boolean; created_at: string };
+        Insert: { id?: string; company_verification_id: string; source: string; name?: string | null; role: string; source_url?: string | null; source_title?: string | null; public_business_email?: string | null; note?: string | null; selected?: boolean; created_at?: string };
+        Update: { id?: string; company_verification_id?: string; source?: string; name?: string | null; role?: string; source_url?: string | null; source_title?: string | null; public_business_email?: string | null; note?: string | null; selected?: boolean; created_at?: string };
+        Relationships: [];
+      };
+      company_invitations: {
+        Row: { id: string; company_verification_id: string; suggestion_id: string | null; contact_name: string | null; contact_role: string | null; contact_email: string; token_hash: string; email_mode: string; status: string; expires_at: string; responded_at: string | null; comment: string | null; created_by: string | null; created_at: string };
+        Insert: { id?: string; company_verification_id: string; suggestion_id?: string | null; contact_name?: string | null; contact_role?: string | null; contact_email: string; token_hash: string; email_mode: string; status?: string; expires_at: string; responded_at?: string | null; comment?: string | null; created_by?: string | null; created_at?: string };
+        Update: { id?: string; company_verification_id?: string; suggestion_id?: string | null; contact_name?: string | null; contact_role?: string | null; contact_email?: string; token_hash?: string; email_mode?: string; status?: string; expires_at?: string; responded_at?: string | null; comment?: string | null; created_by?: string | null; created_at?: string };
+        Relationships: [];
+      };
+      company_verifications: {
+        Row: { id: string; brand_id: string; status: string; company_name: string; website: string; website_domain: string; company_email: string; email_domain: string; registration_number: string | null; address: string; industry: string | null; applicant_name: string; applicant_role: string; relationship: string; phone_hash: string; domain_match: boolean; free_mail: boolean; rejection_source: string | null; reviewed_by: string | null; reviewed_at: string | null; reason: string | null; created_at: string };
+        Insert: { id?: string; brand_id: string; status?: string; company_name: string; website: string; website_domain: string; company_email: string; email_domain: string; registration_number?: string | null; address: string; industry?: string | null; applicant_name: string; applicant_role: string; relationship: string; phone_hash: string; domain_match: boolean; free_mail: boolean; rejection_source?: string | null; reviewed_by?: string | null; reviewed_at?: string | null; reason?: string | null; created_at?: string };
+        Update: { id?: string; brand_id?: string; status?: string; company_name?: string; website?: string; website_domain?: string; company_email?: string; email_domain?: string; registration_number?: string | null; address?: string; industry?: string | null; applicant_name?: string; applicant_role?: string; relationship?: string; phone_hash?: string; domain_match?: boolean; free_mail?: boolean; rejection_source?: string | null; reviewed_by?: string | null; reviewed_at?: string | null; reason?: string | null; created_at?: string };
         Relationships: [];
       };
       content_types: {
@@ -209,6 +239,12 @@ export type Database = {
         Update: { creator_id?: string; tool_id?: number; proficiency?: string };
         Relationships: [];
       };
+      demo_company_directory: {
+        Row: { id: number; domain: string; name: string | null; role: string; public_business_email: string | null; source_url: string; source_title: string; note: string };
+        Insert: { id?: number; domain: string; name?: string | null; role: string; public_business_email?: string | null; source_url: string; source_title: string; note?: string };
+        Update: { id?: number; domain?: string; name?: string | null; role?: string; public_business_email?: string | null; source_url?: string; source_title?: string; note?: string };
+        Relationships: [];
+      };
       escrow_payments: {
         Row: { id: string; campaign_creator_id: string; amount: number; currency: string; platform_fee: number; status: string; provider: string; provider_ref: string | null; funded_at: string | null; released_at: string | null; refunded_at: string | null; disputed_at: string | null; created_at: string; updated_at: string };
         Insert: { id?: string; campaign_creator_id: string; amount: number; currency: string; platform_fee?: number; status?: string; provider?: string; provider_ref?: string | null; funded_at?: string | null; released_at?: string | null; refunded_at?: string | null; disputed_at?: string | null; created_at?: string; updated_at?: string };
@@ -219,6 +255,12 @@ export type Database = {
         Row: { follower_id: string; following_id: string; created_at: string };
         Insert: { follower_id: string; following_id: string; created_at?: string };
         Update: { follower_id?: string; following_id?: string; created_at?: string };
+        Relationships: [];
+      };
+      identity_verifications: {
+        Row: { id: string; user_id: string; kind: string; status: string; full_name: string; id_type: string; id_number_hash: string; id_last4: string; dob: string; id_image_path: string | null; image_deleted_at: string | null; phone_hash: string; consent_at: string; mock_check: Json | null; reviewed_by: string | null; reviewed_at: string | null; reason: string | null; delete_after: string | null; created_at: string };
+        Insert: { id?: string; user_id: string; kind: string; status?: string; full_name: string; id_type: string; id_number_hash: string; id_last4: string; dob: string; id_image_path?: string | null; image_deleted_at?: string | null; phone_hash: string; consent_at: string; mock_check?: Json | null; reviewed_by?: string | null; reviewed_at?: string | null; reason?: string | null; delete_after?: string | null; created_at?: string };
+        Update: { id?: string; user_id?: string; kind?: string; status?: string; full_name?: string; id_type?: string; id_number_hash?: string; id_last4?: string; dob?: string; id_image_path?: string | null; image_deleted_at?: string | null; phone_hash?: string; consent_at?: string; mock_check?: Json | null; reviewed_by?: string | null; reviewed_at?: string | null; reason?: string | null; delete_after?: string | null; created_at?: string };
         Relationships: [];
       };
       interactions: {
@@ -251,6 +293,12 @@ export type Database = {
         Update: { id?: string; conversation_id?: string; sender_id?: string; body?: string; created_at?: string; kind?: string; payload?: Json | null };
         Relationships: [];
       };
+      mock_identity_records: {
+        Row: { id: number; full_name_norm: string; id_number_hash: string; dob: string; label: string };
+        Insert: { id?: number; full_name_norm: string; id_number_hash: string; dob: string; label?: string };
+        Update: { id?: number; full_name_norm?: string; id_number_hash?: string; dob?: string; label?: string };
+        Relationships: [];
+      };
       notifications: {
         Row: { id: string; user_id: string; actor_id: string | null; type: string; entity_type: string | null; entity_id: string | null; data: Json; read_at: string | null; created_at: string };
         Insert: { id?: string; user_id: string; actor_id?: string | null; type: string; entity_type?: string | null; entity_id?: string | null; data?: Json; read_at?: string | null; created_at?: string };
@@ -261,6 +309,12 @@ export type Database = {
         Row: { id: number; escrow_id: string; actor_id: string | null; event: string; from_status: string | null; to_status: string; amount: number; currency: string; note: string | null; created_at: string };
         Insert: { escrow_id: string; actor_id?: string | null; event: string; from_status?: string | null; to_status: string; amount: number; currency: string; note?: string | null; created_at?: string };
         Update: { escrow_id?: string; actor_id?: string | null; event?: string; from_status?: string | null; to_status?: string; amount?: number; currency?: string; note?: string | null; created_at?: string };
+        Relationships: [];
+      };
+      phone_otp_challenges: {
+        Row: { id: string; user_id: string; phone_hash: string; phone_cipher: string; phone_masked: string; method: string; code_hash: string | null; attempts: number; sends: number; status: string; ip_hash: string | null; expires_at: string; last_sent_at: string; created_at: string };
+        Insert: { id?: string; user_id: string; phone_hash: string; phone_cipher: string; phone_masked: string; method: string; code_hash?: string | null; attempts?: number; sends?: number; status?: string; ip_hash?: string | null; expires_at: string; last_sent_at?: string; created_at?: string };
+        Update: { id?: string; user_id?: string; phone_hash?: string; phone_cipher?: string; phone_masked?: string; method?: string; code_hash?: string | null; attempts?: number; sends?: number; status?: string; ip_hash?: string | null; expires_at?: string; last_sent_at?: string; created_at?: string };
         Relationships: [];
       };
       platforms: {
@@ -300,9 +354,9 @@ export type Database = {
         Relationships: [];
       };
       profiles: {
-        Row: { id: string; role: string; username: string; display_name: string; avatar_url: string | null; cover_url: string | null; headline: string | null; bio: string | null; location: string | null; website: string | null; links: Json; is_verified: boolean; is_suspended: boolean; onboarded: boolean; search: string | null; created_at: string; updated_at: string };
-        Insert: { id: string; role?: string; username: string; display_name: string; avatar_url?: string | null; cover_url?: string | null; headline?: string | null; bio?: string | null; location?: string | null; website?: string | null; links?: Json; is_verified?: boolean; is_suspended?: boolean; onboarded?: boolean; created_at?: string; updated_at?: string };
-        Update: { id?: string; role?: string; username?: string; display_name?: string; avatar_url?: string | null; cover_url?: string | null; headline?: string | null; bio?: string | null; location?: string | null; website?: string | null; links?: Json; is_verified?: boolean; is_suspended?: boolean; onboarded?: boolean; created_at?: string; updated_at?: string };
+        Row: { id: string; role: string; username: string; display_name: string; avatar_url: string | null; cover_url: string | null; headline: string | null; bio: string | null; location: string | null; website: string | null; links: Json; is_verified: boolean; is_suspended: boolean; onboarded: boolean; search: string | null; created_at: string; updated_at: string; phone_verified_at: string | null; identity_verified_at: string | null };
+        Insert: { id: string; role?: string; username: string; display_name: string; avatar_url?: string | null; cover_url?: string | null; headline?: string | null; bio?: string | null; location?: string | null; website?: string | null; links?: Json; is_verified?: boolean; is_suspended?: boolean; onboarded?: boolean; created_at?: string; updated_at?: string; phone_verified_at?: string | null; identity_verified_at?: string | null };
+        Update: { id?: string; role?: string; username?: string; display_name?: string; avatar_url?: string | null; cover_url?: string | null; headline?: string | null; bio?: string | null; location?: string | null; website?: string | null; links?: Json; is_verified?: boolean; is_suspended?: boolean; onboarded?: boolean; created_at?: string; updated_at?: string; phone_verified_at?: string | null; identity_verified_at?: string | null };
         Relationships: [];
       };
       project_events: {
@@ -324,9 +378,9 @@ export type Database = {
         Relationships: [];
       };
       reports: {
-        Row: { id: string; reporter_id: string; target_type: string; target_id: string; reason: string; details: string | null; status: string; resolved_by: string | null; resolved_at: string | null; created_at: string };
-        Insert: { id?: string; reporter_id: string; target_type: string; target_id: string; reason: string; details?: string | null; status?: string; resolved_by?: string | null; resolved_at?: string | null; created_at?: string };
-        Update: { id?: string; reporter_id?: string; target_type?: string; target_id?: string; reason?: string; details?: string | null; status?: string; resolved_by?: string | null; resolved_at?: string | null; created_at?: string };
+        Row: { id: string; reporter_id: string; target_type: string; target_id: string; reason: string; details: string | null; status: string; resolved_by: string | null; resolved_at: string | null; created_at: string; priority: string };
+        Insert: { id?: string; reporter_id: string; target_type: string; target_id: string; reason: string; details?: string | null; status?: string; resolved_by?: string | null; resolved_at?: string | null; created_at?: string; priority?: string };
+        Update: { id?: string; reporter_id?: string; target_type?: string; target_id?: string; reason?: string; details?: string | null; status?: string; resolved_by?: string | null; resolved_at?: string | null; created_at?: string; priority?: string };
         Relationships: [];
       };
       saved_opportunities: {
@@ -383,6 +437,12 @@ export type Database = {
         Update: { id?: string; creator_id?: string; type?: string; tool_id?: number | null; post_id?: string | null; experience_id?: string | null; title?: string; evidence_url?: string | null; evidence_notes?: string | null; status?: string; reviewed_by?: string | null; reviewed_at?: string | null; review_notes?: string | null; created_at?: string };
         Relationships: [];
       };
+      verified_phones: {
+        Row: { user_id: string; phone_hash: string; phone_cipher: string; phone_masked: string; method: string; verified_at: string };
+        Insert: { user_id: string; phone_hash: string; phone_cipher: string; phone_masked: string; method: string; verified_at?: string };
+        Update: { user_id?: string; phone_hash?: string; phone_cipher?: string; phone_masked?: string; method?: string; verified_at?: string };
+        Relationships: [];
+      };
     };
     Views: {
       campaign_stats: {
@@ -392,20 +452,31 @@ export type Database = {
     };
     Functions: {
       accept_offer: { Args: { p_message: string }; Returns: string };
+      admin_add_contact: { Args: { p_company: string; p_name: string; p_role: string; p_email: string; p_source_url: string; p_note: string }; Returns: string };
       admin_audit_log: { Args: { p_limit?: number | null }; Returns: { id: number; action: string; target_type: string; target_id: string; meta: Json; created_at: string; actor: Json }[] };
+      admin_create_invitation: { Args: { p_company: string; p_suggestion: string; p_name: string; p_role: string; p_email: string; p_token_hash: string; p_mode: string; p_days?: number | null }; Returns: string };
+      admin_decide_company: { Args: { p_id: string; p_decision: string; p_reason?: string | null }; Returns: undefined };
+      admin_decide_identity: { Args: { p_id: string; p_decision: string; p_reason?: string | null }; Returns: undefined };
+      admin_get_company_verification: { Args: { p_id: string }; Returns: Json };
+      admin_get_identity_verification: { Args: { p_id: string }; Returns: Json };
       admin_list_campaigns: { Args: { p_status?: string | null }; Returns: { campaign: Json; total_count: number }[] };
+      admin_list_company_verifications: { Args: { p_status?: string | null; p_query?: string | null; p_limit?: number | null; p_offset?: number | null }; Returns: { item: Json; total_count: number }[] };
+      admin_list_identity_verifications: { Args: { p_kind: string; p_status?: string | null; p_query?: string | null; p_limit?: number | null; p_offset?: number | null }; Returns: { item: Json; total_count: number }[] };
       admin_list_posts: { Args: { p_query?: string | null; p_removed?: boolean | null; p_limit?: number | null; p_offset?: number | null }; Returns: { post: Json; reports: number; total_count: number }[] };
-      admin_list_reports: { Args: { p_status?: string | null }; Returns: { id: string; target_type: string; target_id: string; reason: string; details: string; status: string; created_at: string; reporter: Json; target_label: string; target_removed: boolean }[] };
+      admin_list_reports: { Args: { p_status?: string | null }; Returns: { id: string; target_type: string; target_id: string; reason: string; details: string; status: string; created_at: string; reporter: Json; target_label: string; target_removed: boolean; priority: string }[] };
       admin_list_users: { Args: { p_query?: string | null; p_role?: string | null; p_limit?: number | null; p_offset?: number | null }; Returns: { id: string; role: string; username: string; display_name: string; avatar_url: string; email: string; is_verified: boolean; is_suspended: boolean; created_at: string; followers: number; posts: number; pending_verifications: number; total_count: number }[] };
       admin_list_verifications: { Args: { p_status?: string | null }; Returns: { id: string; type: string; title: string; status: string; evidence_url: string; evidence_notes: string; created_at: string; reviewed_at: string; creator: Json; subject: string }[] };
       admin_stats: { Args: Record<PropertyKey, never>; Returns: Json };
       ai_match_evidence: { Args: { p_search: string; p_creator: string }; Returns: Json };
       assert_admin: { Args: Record<PropertyKey, never>; Returns: undefined };
+      brand_can_operate: { Args: { p_brand: string }; Returns: boolean };
       campaign_card: { Args: { p_id: string }; Returns: Json };
       can_access_originals: { Args: { p_submission: string }; Returns: boolean };
       can_read_submission_object: { Args: { p_bucket: string; p_name: string }; Returns: boolean };
       can_view_submission: { Args: { p_submission: string }; Returns: boolean };
       cancel_project: { Args: { p_project: string; p_reason: string }; Returns: undefined };
+      company_invitation_lookup: { Args: { p_token_hash: string }; Returns: Json };
+      company_invitation_respond: { Args: { p_token_hash: string; p_decision: string; p_comment: string }; Returns: string };
       create_ai_match_search: { Args: { p_idea: string; p_requirements: Json; p_mode: string; p_notice: string; p_model: string; p_campaign?: string | null }; Returns: string };
       create_campaign_task: { Args: { p_campaign: string; p_title: string; p_description?: string | null; p_due_date?: string | null; p_assignee?: string | null }; Returns: string };
       create_submission: { Args: { p_project: string }; Returns: string };
@@ -445,6 +516,7 @@ export type Database = {
       get_hiring_board: { Args: { p_campaign: string }; Returns: { candidate: Json }[] };
       get_inbox: { Args: { p_other_role?: string | null; p_query?: string | null; p_limit?: number | null; p_offset?: number | null }; Returns: { conversation_id: string; last_message_at: string; last_message_preview: string; last_sender_id: string; unread_count: number; other: Json; total_count: number; conversation_type: string; campaign: Json }[] };
       get_my_projects: { Args: { p_filter?: string | null; p_limit?: number | null; p_offset?: number | null }; Returns: { project: Json; total_count: number }[] };
+      get_my_verification: { Args: Record<PropertyKey, never>; Returns: Json };
       get_negotiation: { Args: { p_conversation: string }; Returns: Json };
       get_notifications: { Args: { p_limit?: number | null; p_offset?: number | null }; Returns: { id: string; type: string; entity_type: string; entity_id: string; data: Json; read_at: string; created_at: string; actor: Json; total_count: number }[] };
       get_opportunities: { Args: { p_tab?: string | null; p_limit?: number | null; p_offset?: number | null }; Returns: { campaign: Json; score: number; reasons: string[]; total_count: number }[] };
@@ -455,9 +527,12 @@ export type Database = {
       get_review_inbox: { Args: { p_campaign?: string | null; p_status?: string | null; p_creator?: string | null; p_limit?: number | null; p_offset?: number | null }; Returns: { item: Json; total_count: number }[] };
       get_saved_posts: { Args: { p_limit?: number | null; p_offset?: number | null }; Returns: { post: Json; total_count: number }[] };
       get_submission_detail: { Args: { p_submission: string }; Returns: Json };
-      get_swipe_deck: { Args: { p_campaign_id?: string | null; p_limit?: number | null; p_include_seen?: boolean | null }; Returns: { creator: Json; score: number; reasons: string[]; campaign_id: string }[] };
+      get_swipe_deck: { Args: { p_campaign_id?: string | null; p_limit?: number | null; p_include_seen?: boolean | null; p_phone_verified?: boolean | null; p_identity_verified?: boolean | null }; Returns: { creator: Json; score: number; reasons: string[]; campaign_id: string }[] };
       get_unread_counts: { Args: Record<PropertyKey, never>; Returns: Json };
+      has_admin_permission: { Args: { p_permission: string }; Returns: boolean };
       hire_creator: { Args: { p_campaign: string; p_creator: string; p_amount: number; p_currency?: string | null }; Returns: string } | { Args: { p_proposal: string }; Returns: string };
+      identity_image_purged: { Args: { p_id: string }; Returns: undefined };
+      identity_images_due: { Args: { p_days: number; p_limit?: number | null }; Returns: { id: string; id_image_path: string }[] };
       is_active_user: { Args: Record<PropertyKey, never>; Returns: boolean };
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
       is_campaign_collaborator: { Args: { p_campaign: string; p_user: string }; Returns: boolean };
@@ -483,12 +558,14 @@ export type Database = {
       refund_escrow: { Args: { p_project: string; p_reason: string }; Returns: undefined };
       release_escrow: { Args: { p_project: string }; Returns: string };
       review_submission: { Args: { p_submission: string; p_decision: string; p_feedback?: string | null }; Returns: undefined };
+      rls_auto_enable: { Args: Record<PropertyKey, never>; Returns: unknown };
       run_ai_match: { Args: { p_search: string; p_query_embedding: string; p_weights: Json; p_keep?: number | null }; Returns: number };
-      search_creators: { Args: { p_query?: string | null; p_skills?: number[] | null; p_categories?: number[] | null; p_tools?: number[] | null; p_content_types?: number[] | null; p_styles?: number[] | null; p_experience?: string[] | null; p_availability?: string[] | null; p_languages?: number[] | null; p_verified_only?: boolean | null; p_sort?: string | null; p_match?: string | null; p_exclude?: string[] | null; p_limit?: number | null; p_offset?: number | null }; Returns: { creator: Json; score: number; matched_groups: number; total_count: number }[] };
+      search_creators: { Args: { p_query?: string | null; p_skills?: number[] | null; p_categories?: number[] | null; p_tools?: number[] | null; p_content_types?: number[] | null; p_styles?: number[] | null; p_experience?: string[] | null; p_availability?: string[] | null; p_languages?: number[] | null; p_verified_only?: boolean | null; p_sort?: string | null; p_match?: string | null; p_exclude?: string[] | null; p_limit?: number | null; p_offset?: number | null; p_phone_verified?: boolean | null; p_identity_verified?: boolean | null }; Returns: { creator: Json; score: number; matched_groups: number; total_count: number }[] };
       search_creators_diagnostics: { Args: { p_query?: string | null; p_skills?: number[] | null; p_categories?: number[] | null; p_tools?: number[] | null; p_content_types?: number[] | null; p_styles?: number[] | null; p_experience?: string[] | null; p_availability?: string[] | null; p_languages?: number[] | null; p_verified_only?: boolean | null }; Returns: { filter_group: string; results_without: number }[] };
       seed_dashboard_history: { Args: { p_creator: string; p_demo_ids: string[]; p_base: number; p_spike_days_ago: number; p_dip_from: number; p_dip_to: number }; Returns: undefined };
       send_offer: { Args: { p_conversation: string; p_price: number; p_terms: Json }; Returns: string };
       set_ai_match_saved: { Args: { p_search: string; p_creator: string; p_saved: boolean }; Returns: undefined };
+      set_brand_type: { Args: { p_type: string }; Returns: undefined };
       short_texts: { Args: { p: string[]; p_max: number }; Returns: boolean };
       sprint_closed: { Args: { p_campaign: string }; Returns: boolean };
       start_negotiation: { Args: { p_campaign: string; p_creator: string }; Returns: string };
@@ -496,9 +573,14 @@ export type Database = {
       store_creator_embedding: { Args: { p_creator: string; p_embedding: string; p_model: string; p_hash: string; p_queued_at: string }; Returns: undefined };
       submission_json: { Args: { p_submission: string }; Returns: Json };
       submit_submission: { Args: { p_submission: string }; Returns: undefined };
+      trust_badges: { Args: { p_id: string }; Returns: Json };
       unhire_creator: { Args: { p_campaign: string; p_creator: string }; Returns: undefined };
       update_campaign_task_status: { Args: { p_task: string; p_status: string }; Returns: undefined };
       uuid_or_null: { Args: { p: string }; Returns: string };
+      verification_record_phone: { Args: { p_user: string; p_hash: string; p_masked: string; p_cipher: string; p_method: string }; Returns: undefined };
+      verification_set_mock_check: { Args: { p_id: string; p_check: Json }; Returns: undefined };
+      verification_submit_company: { Args: { p_user: string; p_company_name: string; p_website: string; p_website_domain: string; p_company_email: string; p_email_domain: string; p_registration: string; p_address: string; p_industry: string; p_applicant_name: string; p_applicant_role: string; p_relationship: string; p_domain_match: boolean; p_free_mail: boolean }; Returns: string };
+      verification_submit_identity: { Args: { p_user: string; p_kind: string; p_full_name: string; p_id_type: string; p_id_hash: string; p_last4: string; p_dob: string; p_image_path: string; p_consent: boolean }; Returns: string };
       verify_certificate: { Args: { p_code: string }; Returns: Json };
     };
     Enums: { [_ in never]: never };

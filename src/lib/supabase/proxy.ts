@@ -3,7 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import type { Database } from "@/types/database";
 import { publicEnv } from "@/lib/env";
 
-const PUBLIC_PATHS = ["/", "/login", "/signup", "/auth", "/verify"];
+const PUBLIC_PATHS = ["/", "/login", "/signup", "/auth", "/verify", "/verify-company"];
 const isPublic = (path: string) =>
   PUBLIC_PATHS.some((p) => path === p || (p !== "/" && path.startsWith(`${p}/`))) ||
   path.startsWith("/api/"); // route handlers do their own auth and return JSON errors
