@@ -6,9 +6,13 @@ import { motion } from "motion/react";
 import { Plus } from "lucide-react";
 import { isActive, type NavItem } from "@/config/nav";
 import { Tooltip } from "@/components/ui/overlay";
+import { SPRING } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
-/** Floating vertical rail (desktop). Active item is filled amber with a soft glow. */
+/** Spring-back press on nav icons (the page then grows out of the pressed icon — see cosmic/app-open). */
+const PRESS = "transition-[scale,color,background-color,box-shadow] duration-300 ease-[var(--spring-glide)] active:scale-[0.88] active:duration-75";
+
+/** Floating vertical glass rail (desktop). The amber active pill glides between items. */
 export function IconRail({ items, unreadMessages, createHref, createLabel }: {
   items: NavItem[];
   unreadMessages: number;
@@ -18,7 +22,7 @@ export function IconRail({ items, unreadMessages, createHref, createLabel }: {
   const pathname = usePathname();
   return (
     <nav aria-label="Main" className="fixed left-5 top-1/2 z-40 hidden -translate-y-1/2 lg:block">
-      <div className="glass flex flex-col items-center gap-3 rounded-full p-2.5">
+      <div className="glass-strong glass-surface flex flex-col items-center gap-3 rounded-full p-2.5">
         {items.map((item) => {
           const active = isActive(item, pathname);
           const Icon = item.icon;
@@ -29,15 +33,16 @@ export function IconRail({ items, unreadMessages, createHref, createLabel }: {
                 aria-label={item.label}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "relative grid size-12 place-items-center rounded-full transition-all duration-200 hover:scale-110",
-                  active ? "text-on-amber" : "bg-card text-ink shadow-sm hover:text-amber-ink hover:shadow-[0_0_0_1px_rgba(var(--glow-rgb),0.3),0_8px_24px_-10px_var(--glow)] dark:bg-transparent dark:text-ink-2 dark:shadow-none dark:hover:bg-ink/5 dark:hover:text-ink",
+                  "relative grid size-12 place-items-center rounded-full hover:scale-110",
+                  PRESS,
+                  active ? "text-on-amber" : "text-ink-2 hover:bg-ink/[0.06] hover:text-ink",
                 )}
               >
                 {active && (
                   <motion.span
                     layoutId="rail-active"
                     className="absolute inset-0 rounded-full bg-amber shadow-[0_0_24px_var(--glow)]"
-                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    transition={SPRING.glide}
                   />
                 )}
                 <Icon className="relative size-5" strokeWidth={active ? 2.2 : 1.8} />
@@ -52,12 +57,12 @@ export function IconRail({ items, unreadMessages, createHref, createLabel }: {
         })}
         {createHref && (
           <>
-            <span className="h-px w-8 bg-line" aria-hidden />
+            <span className="h-px w-8 bg-gradient-to-r from-transparent via-[var(--glass-border-hi)] to-transparent" aria-hidden />
             <Tooltip content={createLabel}>
               <Link
                 href={createHref}
                 aria-label={createLabel}
-                className="grid size-12 place-items-center rounded-full bg-ink text-bg transition-transform hover:rotate-90 hover:scale-110"
+                className={cn("grid size-12 place-items-center rounded-full bg-ink text-bg hover:rotate-90 hover:scale-110", PRESS, "transition-[scale,rotate]")}
               >
                 <Plus className="size-5" />
               </Link>
@@ -69,12 +74,12 @@ export function IconRail({ items, unreadMessages, createHref, createLabel }: {
   );
 }
 
-/** Bottom tab bar (mobile / tablet). */
+/** Bottom glass tab bar (mobile / tablet). The active pill glides between tabs. */
 export function BottomTabs({ items, unreadMessages }: { items: NavItem[]; unreadMessages: number }) {
   const pathname = usePathname();
   return (
-    <nav aria-label="Main" className="fixed inset-x-3 bottom-3 z-40 lg:hidden">
-      <div className="glass-strong mx-auto flex max-w-md items-center justify-around rounded-full px-2 py-2">
+    <nav aria-label="Main" className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 lg:hidden">
+      <div className="glass-strong glass-surface mx-auto flex max-w-md items-center justify-around rounded-full px-2 py-2">
         {items.map((item) => {
           const active = isActive(item, pathname);
           const Icon = item.icon;
@@ -86,11 +91,19 @@ export function BottomTabs({ items, unreadMessages }: { items: NavItem[]; unread
               aria-current={active ? "page" : undefined}
               className={cn(
                 // 6 items on the brand bar: a touch smaller on the narrowest phones so the bar never overflows
-                "relative grid size-10 place-items-center rounded-full transition-colors min-[380px]:size-11",
-                active ? "bg-amber text-on-amber shadow-[0_0_18px_var(--glow)]" : "text-ink-2",
+                "relative grid size-10 place-items-center rounded-full min-[380px]:size-11",
+                PRESS,
+                active ? "text-on-amber" : "text-ink-2",
               )}
             >
-              <Icon className="size-5" />
+              {active && (
+                <motion.span
+                  layoutId="tab-active"
+                  className="absolute inset-0 rounded-full bg-amber shadow-[0_0_18px_var(--glow)]"
+                  transition={SPRING.glide}
+                />
+              )}
+              <Icon className="relative size-5" />
               {item.badge === "messages" && unreadMessages > 0 && (
                 <span className="absolute right-0.5 top-0.5 size-2.5 rounded-full bg-danger ring-2 ring-card" />
               )}

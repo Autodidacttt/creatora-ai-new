@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion } from "motion/react";
 import { BadgeCheck, ClipboardList, FileImage, Flag, LayoutDashboard, Megaphone, Users } from "lucide-react";
 import { TopBar } from "@/components/layout/top-bar";
 import { useUnreadCounts } from "@/hooks/use-realtime";
 import { cn } from "@/lib/utils";
+import { SPRING } from "@/lib/motion";
 
 const NAV = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -24,7 +26,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     <>
       <TopBar unreadNotifications={unread.notifications} />
       <div className="mx-auto grid max-w-7xl gap-5 px-3 pb-12 pt-5 sm:px-5 lg:grid-cols-[14rem_minmax(0,1fr)]">
-        <nav aria-label="Admin" className="glass h-fit rounded-[2rem] p-2 lg:sticky lg:top-24">
+        <nav aria-label="Admin" className="glass-strong glass-surface h-fit rounded-[2rem] p-2 lg:sticky lg:top-24">
           <p className="eyebrow px-3 pb-2 pt-2">Admin</p>
           <ul className="flex gap-1 overflow-x-auto scrollbar-none lg:flex-col">
             {NAV.map((n) => {
@@ -32,8 +34,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               return (
                 <li key={n.href} className="shrink-0">
                   <Link href={n.href} aria-current={active ? "page" : undefined}
-                    className={cn("flex items-center gap-2.5 rounded-full px-3 py-2 text-sm transition-colors", active ? "bg-amber text-on-amber" : "hover:bg-ink/5")}>
-                    <n.icon className="size-4" /> {n.label}
+                    className={cn("relative flex items-center gap-2.5 rounded-full px-3 py-2 text-sm transition-[color,scale] duration-300 ease-[var(--spring-glide)] active:scale-[0.96]", active ? "text-on-amber" : "hover:bg-ink/5")}>
+                    {active && <motion.span layoutId="admin-active" className="absolute inset-0 rounded-full bg-amber shadow-[0_0_18px_-4px_var(--glow)]" transition={SPRING.glide} />}
+                    <n.icon className="relative size-4" /> <span className="relative">{n.label}</span>
                   </Link>
                 </li>
               );

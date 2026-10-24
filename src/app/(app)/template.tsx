@@ -1,8 +1,8 @@
 "use client";
 
-import { PageTransition } from "@/components/astral/interactive";
+import { PageTransition } from "@/components/cosmic/app-open";
 
-/** Soft depth transition on every navigation inside the app (opacity only for reduced effects / reduced motion). */
+/** App-open transition on every navigation inside the app: the page grows out of the pressed icon or card. */
 export default function Template({ children }: { children: React.ReactNode }) {
   return <PageTransition>{children}</PageTransition>;
 }
