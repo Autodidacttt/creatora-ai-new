@@ -56,7 +56,14 @@ export async function POST(request: Request) {
     p_image_path: path, p_consent: true,
   });
   if (error || !id) {
-    await admin.storage.from(BUCKET_IDENTITY).remove([path]);
+    // Don't leave the image behind; if that fails, record it (object id only) — the orphan report lists it
+    const cleanup = await admin.storage.from(BUCKET_IDENTITY).remove([path]);
+    if (cleanup.error || !cleanup.data?.some((o) => o.name === path)) {
+      console.error("identity upload cleanup failed", cleanup.error?.name ?? "not removed");
+      await admin.from("audit_logs").insert({
+        actor_id: me.id, action: "identity_upload_cleanup_failed", target_type: "storage_object", target_id: up.data.id ?? "unknown", meta: { bucket: BUCKET_IDENTITY },
+      });
+    }
     if (error?.code === "23505") return fail("You already have a verification under review.", 409);
     return fail(error?.message ?? "Couldn't submit the verification.", error?.code === "42501" ? 403 : 400);
   }

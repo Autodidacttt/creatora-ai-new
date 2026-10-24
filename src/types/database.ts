@@ -531,8 +531,9 @@ export type Database = {
       get_unread_counts: { Args: Record<PropertyKey, never>; Returns: Json };
       has_admin_permission: { Args: { p_permission: string }; Returns: boolean };
       hire_creator: { Args: { p_campaign: string; p_creator: string; p_amount: number; p_currency?: string | null }; Returns: string } | { Args: { p_proposal: string }; Returns: string };
-      identity_image_purged: { Args: { p_id: string }; Returns: undefined };
+      identity_image_purged: { Args: { p_id: string }; Returns: string };
       identity_images_due: { Args: { p_days: number; p_limit?: number | null }; Returns: { id: string; id_image_path: string }[] };
+      identity_orphan_images: { Args: { p_min_age_hours?: number | null; p_limit?: number | null }; Returns: { name: string; created_at: string; size: number }[] };
       is_active_user: { Args: Record<PropertyKey, never>; Returns: boolean };
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
       is_campaign_collaborator: { Args: { p_campaign: string; p_user: string }; Returns: boolean };

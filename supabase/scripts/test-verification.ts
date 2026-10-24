@@ -131,6 +131,7 @@ async function main() {
     const sub = await call("/api/verification/identity", creator, { form: await idForm("Maya Okafor", "DEMO-100008", "1997-12-09", await jpeg("DEMO ID")) });
     check("ID submitted → pending", sub.status === 200 && sub.json.status === "pending", JSON.stringify(sub.json));
     check("second submission while pending → 409", (await call("/api/verification/identity", creator, { form: await idForm("Maya Okafor", "DEMO-100008", "1997-12-09", await jpeg("ID")) })).status === 409);
+    check("…and its uploaded image is cleaned up (only the first one is stored)", ((await admin.storage.from("identity-documents").list(creator.id)).data ?? []).length === 1);
     const row = (await admin.from("identity_verifications").select("*").eq("id", String(sub.json.id)).single()).data!;
     check("ID number stored only as hash + last 4", row.id_number_hash.length === 64 && row.id_last4 === "0008" && !JSON.stringify(row).includes("DEMO-100008") && !JSON.stringify(row).includes("DEMO100008"));
     let mock: string | undefined;

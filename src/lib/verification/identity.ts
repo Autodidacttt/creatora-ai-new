@@ -1,25 +1,7 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { mockIdentityApiKey, verificationSettings } from "./settings";
+import { mockIdentityApiKey } from "./settings";
 
-export const BUCKET_IDENTITY = "identity-documents";
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Admin = SupabaseClient<any, any, any>;
-
-/** Deletes ID images ID_RETENTION_DAYS after the decision (and records it). Safe to call often. */
-let lastPurge = 0;
-export async function purgeExpiredIdImages(admin: Admin, force = false): Promise<number> {
-  if (!force && Date.now() - lastPurge < 10 * 60_000) return 0;
-  lastPurge = Date.now();
-  const { data } = await admin.rpc("identity_images_due", { p_days: verificationSettings().retentionDays, p_limit: 100 });
-  const due = (data ?? []) as { id: string; id_image_path: string }[];
-  for (const d of due) {
-    const { error } = await admin.storage.from(BUCKET_IDENTITY).remove([d.id_image_path]);
-    if (!error) await admin.rpc("identity_image_purged", { p_id: d.id });
-  }
-  return due.length;
-}
+export { BUCKET_IDENTITY, PurgeQueryError, purgeExpiredIdImages, type PurgeResult } from "./purge";
 
 /**
  * Calls the app's own mock government-ID service the way an external API would be called (HTTP, API key, JSON).

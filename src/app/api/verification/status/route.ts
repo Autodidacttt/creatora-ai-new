@@ -2,7 +2,7 @@ import { after, NextResponse } from "next/server";
 import { apiSession } from "@/lib/auth";
 import { getServerClient } from "@/lib/supabase/server";
 import { getAdminClient } from "@/lib/supabase/admin";
-import { purgeExpiredIdImages } from "@/lib/verification/identity";
+import { PurgeQueryError, purgeExpiredIdImages } from "@/lib/verification/identity";
 import { verificationSettings } from "@/lib/verification/settings";
 import { SAMPLE_IDENTITIES } from "@/config/verification";
 
@@ -15,7 +15,10 @@ export async function GET() {
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   const s = verificationSettings();
   // Retention runs opportunistically (at most every 10 minutes per instance)
-  after(async () => { await purgeExpiredIdImages(getAdminClient()).catch(() => undefined); });
+  after(async () => {
+    try { await purgeExpiredIdImages(getAdminClient(), { trigger: "app" }); }
+    catch (err) { if (!(err instanceof PurgeQueryError)) console.error("identity purge (app) failed", (err as Error)?.name ?? ""); }
+  });
   return NextResponse.json({
     ...(data as object),
     config: {

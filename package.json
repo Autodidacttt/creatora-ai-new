@@ -16,6 +16,8 @@
     "test:hiring": "tsx supabase/scripts/test-hiring.ts",
     "test:ai-finder": "tsx supabase/scripts/test-ai-finder.ts",
     "test:verification": "tsx supabase/scripts/test-verification.ts",
+    "test:purge": "tsx supabase/scripts/test-identity-purge.ts",
+    "report:id-orphans": "tsx supabase/scripts/report-identity-orphans.ts",
     "ai:embeddings": "tsx supabase/scripts/embed-creators.ts"
   },
   "dependencies": {

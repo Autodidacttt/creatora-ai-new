@@ -51,7 +51,7 @@ Migration `0026_identity_company_verification.sql` (expand step, safe with the p
 
 **Privacy / retention:**
 - Phones and ID numbers are never stored in clear (peppered hashes; phones also encrypted).
-- ID images are private and deleted after `ID_RETENTION_DAYS` (default 30) through the opportunistic purge or `/api/cron/purge-identity` (with `CRON_SECRET`).
+- ID images are private and deleted after `ID_RETENTION_DAYS` (default 30) through the opportunistic purge or `/api/cron/purge-identity`, scheduled daily by Vercel Cron (`vercel.json`, authorised with `CRON_SECRET`). Migration `0028_identity_purge_reliability.sql` (rollback `supabase/rollback/0028_down.sql`): a row is marked purged only once the image is gone from storage, and only once, so retries and overlapping runs are safe. The cron route returns exact counts, and 500 when anything wasn't purged; failures are audit-logged with the verification id only and retried on the next run. `npm run report:id-orphans` lists stored images with no verification row (report-only, deletes nothing).
 - Sensitive fields are never logged.
 - Users read only their own status.
 
@@ -289,6 +289,7 @@ npm run test:workspace  # brand workspace acceptance flow against a running app 
 npm run test:hiring     # accept → hire → fund, shortlist rule, creator targets, group chat + tasks (throwaway accounts)
 npm run test:ai-finder  # AI Creator Finder routes, ranking, cached reasons, fallback, RLS (running app)
 npm run test:verification  # phone OTP, ID + mock check + admin decision, company invitation, gating, RLS (running app, demo modes)
+npm run test:purge     # ID-image retention purge: boundary, failures + retries, concurrency, cron secret, orphans (test project + local app only; needs CRON_SECRET)
 npm run ai:embeddings   # build / refresh creator embeddings for the AI Creator Finder
 ```
 
