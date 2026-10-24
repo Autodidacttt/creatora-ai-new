@@ -9,9 +9,10 @@ All demo accounts use the password `CreatoraDemo#2026`. The sign-in page has one
    - real follower, like and piece counts
    - the *Verified creator* badge
    - the **Trust & verification** panel, which shows what each badge checked and how
-   - tools with proficiency and a ✓ on verified tools
+   - the Phone Verified / Identity Verified badges (hover for what was checked)
+   - tools with proficiency
    - experience, rates and the workflow overview
-2. Click **Sunbeam Set**. The modal shows the tools, the workflow pipeline (ComfyUI → FLUX → Photoshop → Magnific) with *Documented & verified*, the format, and *Cleared for commercial use*.
+2. Click **Sunbeam Set**. The modal shows the tools, the workflow pipeline (ComfyUI → FLUX → Photoshop → Magnific) , the format, and *Cleared for commercial use*.
 3. Like the piece and leave a comment.
 
 **2. Discovery and the empty state (35s).** Sign out, then sign in as **Atelier Nova** (`atelier@demo.creatora.ai`).
@@ -38,4 +39,4 @@ All demo accounts use the password `CreatoraDemo#2026`. The sign-in page has one
 **6. Message in realtime (20s).** On a card, click **Contact** and send a message.
 - In the private window, signed in as that creator, the inbox badge and the thread update live.
 
-**Optional close (10s).** Sign in as `admin@demo.creatora.ai`. Approve Arjun's pending tool verification: the badge appears on his profile and the action shows in the audit log.
+**Optional close (10s).** Sign in as `admin@demo.creatora.ai` → **Verifications**. Open Diego's pending ID (simulated check: Identity Verified), view the demo ID image, and click **Mark Verified**: the Identity Verified badge appears on his profile and every step shows in the audit log.

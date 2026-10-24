@@ -69,6 +69,8 @@ async function main() {
   const mk = async (role: "brand" | "creator", name: string) => {
     const r = await admin.auth.admin.createUser({ email: `ws-${role}-${stamp}@example.com`, password: pw, email_confirm: true, user_metadata: { role, display_name: name } });
     if (r.error || !r.data.user) throw new Error(r.error?.message);
+    // New brands must be verified to publish / hire (0026) — tested in test:rls and test:verification
+    if (role === "brand") await admin.from("brand_details").update({ brand_type: "company", company_verified_at: new Date().toISOString() }).eq("profile_id", r.data.user.id);
     return r.data.user.id;
   };
   const created: string[] = [];

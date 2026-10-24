@@ -109,7 +109,7 @@ export const conversations: [string, string, string, [string, string, number][]]
 export const verifications: {
   key: string;
   creator: string;
-  type: "tool" | "workflow" | "past_work" | "identity";
+  type: "past_work";   // tool / workflow verification was retired; identity has its own flow (seed/verification.ts)
   tool?: string;
   post?: string;
   experience?: string;
@@ -118,18 +118,8 @@ export const verifications: {
   notes: string;
   status: "approved" | "pending";
 }[] = [
-  { key: "v1", creator: "maya", type: "tool", tool: "runway", title: "Runway — verified project history", evidenceUrl: "https://mayaokafor.studio/process", notes: "Shared Runway workspace export with 112 generations for The Last Lighthouse.", status: "approved" },
-  { key: "v2", creator: "maya", type: "workflow", post: "maya-lighthouse", title: "Documented workflow: The Last Lighthouse", evidenceUrl: "https://mayaokafor.studio/lighthouse-breakdown", notes: "Prompt log, seeds and edit timeline reviewed.", status: "approved" },
-  { key: "v3", creator: "maya", type: "identity", title: "Identity verified", notes: "Government ID checked by the trust team.", status: "approved" },
-  { key: "v4", creator: "kenji", type: "tool", tool: "blender", title: "Blender — verified source files", evidenceUrl: "https://kenji3d.jp/prism-files", notes: ".blend files for Prism Monolith reviewed.", status: "approved" },
-  { key: "v5", creator: "kenji", type: "identity", title: "Identity verified", notes: "Government ID checked by the trust team.", status: "approved" },
-  { key: "v6", creator: "sofia", type: "tool", tool: "midjourney", title: "Midjourney — verified account history", evidenceUrl: "https://sofiamarin.es/process", notes: "Account gallery matches portfolio pieces.", status: "approved" },
   { key: "v7", creator: "sofia", type: "past_work", experience: "sofia-exp-1", title: "Atelier Nova — Holiday 2026 collaboration", notes: "Confirmed by Atelier Nova via the platform (completed campaign).", status: "approved" },
-  { key: "v8", creator: "sofia", type: "workflow", post: "sofia-sunbeam", title: "Documented workflow: Sunbeam Set", evidenceUrl: "https://sofiamarin.es/sunbeam", notes: "ComfyUI graph and garment plates reviewed.", status: "approved" },
-  { key: "v9", creator: "sofia", type: "identity", title: "Identity verified", notes: "Government ID checked by the trust team.", status: "approved" },
-  { key: "v10", creator: "arjun", type: "tool", tool: "after-effects", title: "After Effects — toolkit files", evidenceUrl: "https://behance.net/arjunmehta", notes: "Submitted AE project for Gradient Systems.", status: "pending" },
   { key: "v11", creator: "lena", type: "past_work", experience: "lena-exp-2", title: "Neon Garden — ‘Static Hearts’ music video", evidenceUrl: "https://vimeo.com/lenavisuals", notes: "Label contact provided for confirmation.", status: "pending" },
-  { key: "v12", creator: "diego", type: "identity", title: "Identity verification request", notes: "Submitted ID for review.", status: "pending" },
 ];
 
 export const reports: { key: string; reporter: string; targetType: "post"; post: string; reason: "ip_infringement" | "misleading"; details: string }[] = [

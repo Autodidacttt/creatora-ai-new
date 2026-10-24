@@ -13,6 +13,48 @@ All data comes from Supabase and every action persists. New accounts start compl
 
 ## Recent changes
 
+### 2026-10-24: Account verification overhaul (phone OTP, ID, company verification, brand types)
+
+Migration `0026_identity_company_verification.sql` (expand step, safe with the previous app). Rollback: `supabase/rollback/0026_down.sql`, captured from production. A contract migration that deletes the old tool / workflow verification rows is prepared separately and only applied after approval.
+
+- **Removed: AI Tool and Workflow verification.** Badges, the request UI, admin queue items, ranking input ("Verified on…"), seed data and the request type are all gone. New requests are refused in the database. Kept: past-work verification and Creative Review's AI checks.
+- **Phone OTP** (creators and brands): `POST /api/verification/phone/start` and `/check`.
+  - 6-digit code stored hashed, 5-minute expiry, 5 attempts, 30-second resend cooldown.
+  - Hourly limits per user, per number and per IP; numbers normalised to E.164.
+  - **One number = one account**: `verified_phones.phone_hash` is unique (peppered HMAC), and the number is AES-GCM encrypted for admin display.
+  - Twilio Verify is used when configured; otherwise **demo mode** shows the code in the UI ("Demo OTP, no SMS sent").
+- **ID verification (eKYC)** for creators and individual recruiters: `POST /api/verification/identity`.
+  - The ID number is stored as a peppered hash plus its last 4 characters. Date of birth and the ID image are in restricted storage: the private `identity-documents` bucket has no client policies.
+  - Admins view the image only through `/api/admin/verifications/identity/:id/image` (60-second signed URL, every view audit-logged). Images are deleted `ID_RETENTION_DAYS` after the decision.
+  - Statuses: not_started → pending → verified | rejected (with reason). 3 attempts. A notification goes out on every change.
+- **Mock government-ID API**: `POST /api/mock-identity/verify`. Its own service with an API key, JSON, latency and rate limit. It knows ~10 **fictional** identities (`mock_identity_records`) and answers only "Identity Verified" / "Identity Not Verified". The result is advisory ("Simulated check, not a government verification"); **the admin's decision is final**. No real government API is ever called.
+- **Brand types**: signup asks *Individual Recruiter* or *Company / Organization* (`brand_details.brand_type`), then routes brands to `/verification`.
+  - **Gating**: a new brand can draft but can't publish or hire until verified. This is enforced by a trigger on briefs going active and in the hire RPC (`brand_can_operate`), controlled by `app_settings.brand_verification_gating`.
+  - Existing brands are grandfathered (`verification_required = false`) and see a banner asking them to choose a type and verify. Demo brands are verified companies.
+- **Company verification**: `POST /api/verification/company`.
+  - Deterministic domain check (email domain vs website; free-mail flagged).
+  - Admin "Find official contacts": Gemini with search grounding, **off by default** (`AI_CONTACT_DISCOVERY_ENABLED`). It sends only the company name, domain, industry and address. Sources must come from grounding; emails are never constructed. A seeded **demo directory** ("Demo source, simulated") is the fallback.
+  - The admin selects a contact and confirms "You are about to email X". That creates a single-use invitation: hashed token, 7 days.
+  - The public page `/verify-company/:token` offers Approve / Reject. Approve gives a 🟢 Verified Company. Reject produces a neutral message for the applicant and, for admins, 🔴 Potential Impersonation plus a **high-priority report** (never an automatic suspension). No response: the invitation expires and the admin can resend.
+  - `EMAIL_SEND_MODE=demo` (default) sends nothing and shows a copyable link instead.
+- **Admin queue** `/admin/verifications`: tabs for Creators, Recruiters, Companies and Past work, with filters and pagination. Detail pages show the ID image, a phone reveal (logged; no calling) and the mock result.
+  - Mark Verified / Reject (reason required). Permissions are `verify_creators` / `verify_brands` (`admin_permissions`). Every action goes to `audit_logs`.
+- **Badges** "Phone Verified", "Identity Verified" and "Verified Company" (with tooltips) plus the brand type appear on cards, profiles, briefs and opportunities, and in chat headers. Search and Swipe gain **Phone verified** / **Identity verified** filters.
+- New tables: `verified_phones`, `phone_otp_challenges`, `identity_verifications`, `mock_identity_records`, `company_verifications`, `company_contact_suggestions`, `demo_company_directory`, `company_invitations`, `admin_permissions`, `app_settings`.
+- Tests: `npm run test:verification` (OTP, duplicates across creator and brand, ID → mock → admin → badge, private image, gating, company approve / reject / expiry, RLS).
+
+**Demo mode (judges):**
+1. Verify a phone: the code appears on screen.
+2. Use a sample ID from the banner (e.g. *Maya Okafor · DEMO-100008 · 1997-12-09*).
+3. As `admin@demo.creatora.ai`, open **Verifications** to review it.
+4. For companies, use a demo domain (`northpeak.example`). **Find official contacts** returns the demo directory; send the invitation and open the copyable link to approve.
+
+**Privacy / retention:**
+- Phones and ID numbers are never stored in clear (peppered hashes; phones also encrypted).
+- ID images are private and deleted after `ID_RETENTION_DAYS` (default 30) through the opportunistic purge or `/api/cron/purge-identity` (with `CRON_SECRET`).
+- Sensitive fields are never logged.
+- Users read only their own status.
+
 ### 2026-10-24: Clean files only after the payment is released; no "Create brief" for admins
 
 **Download-gating rule.** A brand gets the clean (un-watermarked) original only if all three hold, checked on the server for every request:
@@ -121,7 +163,7 @@ New components: `chat/negotiation.tsx`, `workspace/hire-button.tsx` (replaces th
 | Area | What works |
 |---|---|
 | **Creator profiles & AI portfolios** | Social header with real follower, following, pieces and likes counts. Follow, Contact and Edit profile. Specialisations, tools (with proficiency), skills, content types, styles, languages, platforms, rates, workflow overview and past brand work. Portfolio pieces are uploaded to Storage or pasted as links (YouTube, Vimeo, Instagram, TikTok, Behance). Each piece records tools, an ordered workflow pipeline, workflow notes, content type, style, aspect ratio and commercial-use clearance. A post modal shows likes, comments and save. |
-| **Verification (bonus)** | Badges for verified tools, documented workflows, verified past work and identity checks. Every badge explains *what* was checked and *how*. Creators request verification; admins review the requests, and each decision is audit-logged and notifies the creator. |
+| **Verification (bonus)** | Phone OTP (one number per account), ID verification reviewed by the trust team (with a simulated ID check), company verification confirmed by an official contact, and verified past work. Badges: Phone Verified, Identity Verified, Verified Company. Every badge explains *what* was checked and *how*. Creators request verification; admins review the requests, and each decision is audit-logged and notifies the creator. |
 | **Discovery & filtering** | Debounced Postgres search across names, bios, posts, tools, skills and categories. Combinable multi-select filters: tools, skills, specialisation, content type, style, experience, availability, language and verified-only. Filters sync to the URL. Results show a count, can be sorted three ways and load with infinite scroll. When nothing matches, the **empty state names each filter that is costing results** ("removing it shows 4 creators"), offers one-click removal, and lists related creators. |
 | **Briefs & campaigns** | Structured brief: content type, style, category, aspect ratios (including custom), platforms, audience, tools, skills, languages, budget, deadline and creators needed. Commercial-use terms: usage rights, territory, duration, exclusivity, licence type and AI-disclosure requirement. Statuses run draft → active → completed, and pipeline counts are computed live. |
 | **AI brief builder (bonus)** | One sentence goes to a server-side Gemini call. The response must follow a JSON schema whose enums come from the live lookup tables. Zod validates the output, and the server maps names to IDs. The result pre-fills the form for review. Assumptions the AI made are listed. Without a key, or if the call fails, the user gets a clear message and the manual form. |
@@ -179,6 +221,15 @@ Copy `.env.example` to `.env.local` and fill it in. Never commit `.env.local`.
 | `GEMINI_EMBEDDING_MODEL` | AI Creator Finder | Optional, default `gemini-embedding-2` |
 | `GEMINI_MODEL` | `/api/ai/brief` | Optional, default `gemini-3.5-flash` (falls back to 3.1-flash-lite → 3.5-flash-lite on retirement, overload or timeout) |
 | `SUPABASE_JWKS_URL`, `SITE_URL` | Reserved / docs | Optional |
+| `IDENTITY_SECRET` | Phone / ID-number hashes, phone encryption, invitation tokens | **Server only.** Optional (derived from `SUPABASE_SECRET_KEY` if unset). **Set it before rotating the Supabase key**, or existing hashes can't be matched |
+| `OTP_MODE`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SERVICE_SID` | Phone OTP | Optional. Without Twilio (or with `OTP_MODE=demo`) codes are shown in the UI ("Demo OTP, no SMS sent") |
+| `DEFAULT_PHONE_COUNTRY_CODE` | Phone OTP | Optional, default `+91` (for numbers typed without a country code) |
+| `EMAIL_SEND_MODE`, `RESEND_API_KEY`, `EMAIL_FROM` | Company invitations | Default `demo` (nothing sent; link shown to the admin). `live` + a Resend key sends real email |
+| `MOCK_IDENTITY_API_KEY` | Mock government-ID API | Optional (derived from the server secret if unset) |
+| `AI_CONTACT_DISCOVERY_ENABLED` | Admin "Find official contacts" | Default `false`. `true` sends company name / domain / industry / address to Gemini with search grounding |
+| `ID_RETENTION_DAYS` | ID image retention | Default `30` days after the decision |
+| `DEMO_ID_NOTICE` | ID form | Default `true`: shows the hackathon banner and the sample IDs |
+| `CRON_SECRET` | `/api/cron/purge-identity` | Optional scheduled purge (Vercel Cron) |
 
 ## 4. Run migrations
 
@@ -237,6 +288,7 @@ npm run test:rls        # permission + integrity checks against your Supabase pr
 npm run test:workspace  # brand workspace acceptance flow against a running app (APP_URL, default localhost:3000)
 npm run test:hiring     # accept → hire → fund, shortlist rule, creator targets, group chat + tasks (throwaway accounts)
 npm run test:ai-finder  # AI Creator Finder routes, ranking, cached reasons, fallback, RLS (running app)
+npm run test:verification  # phone OTP, ID + mock check + admin decision, company invitation, gating, RLS (running app, demo modes)
 npm run ai:embeddings   # build / refresh creator embeddings for the AI Creator Finder
 ```
 

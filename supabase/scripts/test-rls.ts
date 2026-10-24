@@ -102,8 +102,9 @@ async function main() {
     check("creators cannot create briefs", !!creatorCampaign.error);
     const brandPost = await atelier.c.from("posts").insert({ creator_id: atelier.id, title: "Nope", media_type: "image", media_url: "https://example.com/x.jpg" });
     check("brands cannot create portfolio posts", !!brandPost.error);
-    const tool = await sofia.c.from("creator_tools").select("tool_id").eq("creator_id", sofia.id).limit(1).single();
-    const selfApproved = await sofia.c.from("verifications").insert({ creator_id: sofia.id, type: "tool", tool_id: tool.data!.tool_id, title: "Self approval attempt", status: "approved" }).select("id, status").single();
+    // (past work is the remaining evidence-based request type; tool / workflow verification was retired in 0026)
+    const exp = await sofia.c.from("creator_experiences").select("id").eq("creator_id", sofia.id).limit(1).single();
+    const selfApproved = await sofia.c.from("verifications").insert({ creator_id: sofia.id, type: "past_work", experience_id: exp.data!.id, title: "Self approval attempt", status: "approved" }).select("id, status").single();
     check("self-submitted verification is forced to pending", selfApproved.data?.status === "pending", JSON.stringify(selfApproved.data ?? selfApproved.error));
     if (selfApproved.data) await sofia.c.from("verifications").delete().eq("id", selfApproved.data.id);
     const statsRpc = await sofia.c.rpc("admin_stats");
@@ -222,6 +223,13 @@ async function main() {
       check("creators cannot see a draft brief", (seeDraft.data?.length ?? 0) === 0);
       const earlyApply = await fresh.c.from("campaign_applications").insert({ campaign_id: draft.data!.id, creator_id: fresh.id, pitch: "Applying before publication" });
       check("cannot apply to a draft brief", !!earlyApply.error);
+      // New brands must be verified before publishing (0026), via a direct update or the publish RPC
+      const gated = await brand.c.from("campaigns").update({ status: "active" }).eq("id", draft.data!.id).select("id");
+      check("an unverified new brand can't publish (direct update)", !!gated.error && /Verify your brand/.test(gated.error.message), gated.error?.message);
+      check("…nor through publish_campaign", !!(await brand.c.rpc("publish_campaign", { p_campaign: draft.data!.id })).error);
+      check("…nor by marking its own account verified", !!(await brand.c.from("brand_details").update({ company_verified_at: new Date().toISOString() } as never).eq("profile_id", brand.id)).error
+        || ((await adminApi.from("brand_details").select("company_verified_at").eq("profile_id", brand.id).single()).data?.company_verified_at == null));
+      await adminApi.from("brand_details").update({ brand_type: "company", company_verified_at: new Date().toISOString() }).eq("profile_id", brand.id);
       const earlyShortlist = await brand.c.from("campaign_shortlists").insert({ campaign_id: draft.data!.id, creator_id: fresh.id, added_by: brand.id });
       check("cannot shortlist on a draft brief (publish first)", !!earlyShortlist.error && /Publish the brief first/.test(earlyShortlist.error.message), earlyShortlist.error?.message);
       await brand.c.from("campaigns").update({ status: "active" }).eq("id", draft.data!.id);

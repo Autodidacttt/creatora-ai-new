@@ -14,6 +14,7 @@ import {
 } from "./data/social";
 import { seedWorkspace } from "./workspace";
 import { seedId } from "./ids";
+import { seedVerification } from "./verification";
 
 type Account = CreatorSeed | BrandSeed | AdminSeed;
 
@@ -443,6 +444,8 @@ async function main() {
   await loadLookups();
   console.log("• users");
   await ensureUsers();
+  console.log("• verification (demo states)");
+  await seedVerification({ admin: supabase, uid, log: (m) => console.log(m) });
   console.log("• posts & media");
   const covers = await seedPosts();
   console.log("• profiles");

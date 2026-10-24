@@ -15,6 +15,7 @@
     "test:workspace": "tsx supabase/scripts/test-workspace.ts",
     "test:hiring": "tsx supabase/scripts/test-hiring.ts",
     "test:ai-finder": "tsx supabase/scripts/test-ai-finder.ts",
+    "test:verification": "tsx supabase/scripts/test-verification.ts",
     "ai:embeddings": "tsx supabase/scripts/embed-creators.ts"
   },
   "dependencies": {
