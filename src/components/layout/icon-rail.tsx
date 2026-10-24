@@ -30,13 +30,13 @@ export function IconRail({ items, unreadMessages, createHref, createLabel }: {
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "relative grid size-12 place-items-center rounded-full transition-all duration-200 hover:scale-110",
-                  active ? "text-on-amber" : "bg-card text-ink shadow-sm hover:shadow-md",
+                  active ? "text-on-amber" : "bg-card text-ink shadow-sm hover:text-amber-ink hover:shadow-[0_0_0_1px_rgba(var(--glow-rgb),0.3),0_8px_24px_-10px_var(--glow)] dark:bg-transparent dark:text-ink-2 dark:shadow-none dark:hover:bg-ink/5 dark:hover:text-ink",
                 )}
               >
                 {active && (
                   <motion.span
                     layoutId="rail-active"
-                    className="absolute inset-0 rounded-full bg-amber shadow-[0_0_24px_rgba(255,192,46,0.65)]"
+                    className="absolute inset-0 rounded-full bg-amber shadow-[0_0_24px_var(--glow)]"
                     transition={{ type: "spring", stiffness: 380, damping: 30 }}
                   />
                 )}
@@ -87,7 +87,7 @@ export function BottomTabs({ items, unreadMessages }: { items: NavItem[]; unread
               className={cn(
                 // 6 items on the brand bar: a touch smaller on the narrowest phones so the bar never overflows
                 "relative grid size-10 place-items-center rounded-full transition-colors min-[380px]:size-11",
-                active ? "bg-amber text-on-amber shadow-[0_0_18px_rgba(255,192,46,0.55)]" : "text-ink-2",
+                active ? "bg-amber text-on-amber shadow-[0_0_18px_var(--glow)]" : "text-ink-2",
               )}
             >
               <Icon className="size-5" />

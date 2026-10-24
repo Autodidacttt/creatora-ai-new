@@ -32,7 +32,7 @@ export function CampaignCard({ campaign, score, reasons, footer, showBrand = tru
   showStats?: boolean;
 }) {
   return (
-    <article className="glass group relative flex flex-col gap-4 rounded-[2rem] p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lift">
+    <article className="glass glow-hover group relative flex flex-col gap-4 rounded-[2rem] p-5 transition-all duration-300 hover:-translate-y-1">
       <div className="flex items-start justify-between gap-3">
         {showBrand ? (
           <Link href={`/u/${campaign.brand.username}`} className="relative z-10 flex min-w-0 items-center gap-2.5">

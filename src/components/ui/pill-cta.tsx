@@ -17,12 +17,14 @@ interface PillCTAProps {
   tone?: "light" | "dark";
 }
 
-/** White pill CTA with the circular amber arrow — the signature button of the design. */
+/** Starlight pill CTA with the circular amber arrow — the signature button of the design. */
 export function PillCTA({ children, href, onClick, className, size = "md", loading, disabled, type = "button", tone = "light" }: PillCTAProps) {
   const classes = cn(
     "group relative inline-flex items-center justify-between gap-4 overflow-hidden rounded-full font-medium transition-all duration-300",
     "hover:-translate-y-0.5 hover:shadow-lift disabled:pointer-events-none disabled:opacity-60",
-    tone === "light" ? "bg-card text-ink shadow-soft" : "bg-ink text-bg shadow-soft",
+    tone === "light"
+      ? "bg-card text-ink shadow-soft dark:bg-[#f2f1fb] dark:text-[#12142a] dark:hover:shadow-[0_14px_44px_-14px_var(--glow)]"
+      : "bg-ink text-bg shadow-soft dark:border dark:border-glass-border dark:bg-glass-strong dark:text-ink dark:backdrop-blur-xl",
     size === "lg" ? "h-16 pl-8 pr-2 text-lg" : "h-12 pl-5 pr-1.5 text-sm",
     className,
   );
@@ -35,7 +37,7 @@ export function PillCTA({ children, href, onClick, className, size = "md", loadi
       <span className="relative">{children}</span>
       <span
         className={cn(
-          "relative grid place-items-center rounded-full bg-amber text-on-amber transition-transform duration-300 group-hover:rotate-45",
+          "relative grid place-items-center rounded-full bg-amber text-on-amber shadow-[0_0_18px_-2px_var(--glow)] transition-transform duration-300 group-hover:rotate-45",
           size === "lg" ? "size-12" : "size-9",
         )}
       >

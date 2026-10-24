@@ -33,7 +33,7 @@ export function SegmentedTabs<T extends string>({ value, onChange, items, classN
             {active && (
               <motion.span
                 layoutId={`tab-${id}`}
-                className="absolute inset-0 rounded-full bg-amber shadow-sm"
+                className="absolute inset-0 rounded-full bg-amber shadow-[0_0_16px_-4px_var(--glow)]"
                 transition={{ type: "spring", stiffness: 420, damping: 34 }}
               />
             )}

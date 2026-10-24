@@ -23,7 +23,7 @@ export function CompanyForm({ status, onSubmitted }: { status: MyVerification; o
   if (c?.status === "pending") {
     return (
       <div className="space-y-1 text-sm" role="status">
-        <p className="flex items-center gap-2"><Clock className="size-4 text-amber-2" /> <strong>Company Verification Pending</strong> · {c.company_name}</p>
+        <p className="flex items-center gap-2"><Clock className="size-4 text-amber-ink" /> <strong>Company Verification Pending</strong> · {c.company_name}</p>
         <p className="text-xs text-ink-3">The trust team contacts an official representative of the company to confirm you. This can take a few days.</p>
       </div>
     );

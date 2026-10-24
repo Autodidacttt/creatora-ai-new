@@ -16,7 +16,12 @@ export function SectionTitle({ eyebrow, title, action, className }: {
   return (
     <div className={cn("flex items-end justify-between gap-4", className)}>
       <div>
-        {eyebrow && <p className="eyebrow mb-1">{eyebrow}</p>}
+        {eyebrow && (
+          <p className="eyebrow mb-1 flex items-center gap-2">
+            <span aria-hidden className="size-1 rounded-full bg-amber shadow-[0_0_8px_var(--glow)]" />
+            {eyebrow}
+          </p>
+        )}
         <h2 className="display text-xl sm:text-2xl">{title}</h2>
       </div>
       {action}

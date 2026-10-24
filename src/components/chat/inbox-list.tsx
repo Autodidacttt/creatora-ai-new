@@ -70,7 +70,7 @@ export function InboxList() {
                     <span className="shrink-0 text-[11px] font-normal text-ink-3">{timeAgo(c.last_message_at)}</span>
                   </span>
                   {c.conversation_type === "direct" && c.campaign && (
-                    <span className="block truncate text-[11px] font-normal text-amber-2">re: {c.campaign.title}</span>
+                    <span className="block truncate text-[11px] font-normal text-amber-ink">re: {c.campaign.title}</span>
                   )}
                   <span className="flex items-center justify-between gap-2">
                     <span className={cn("truncate text-xs", c.unread_count ? "text-ink" : "font-normal text-ink-3")}>

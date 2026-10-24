@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 export function Wordmark({ className }: { className?: string }) {
   return (
     <span className={cn("display flex items-center gap-2 text-xl", className)}>
-      <span aria-hidden className="grid size-8 place-items-center rounded-full bg-amber text-sm text-on-amber shadow-[0_0_20px_rgba(255,192,46,0.5)]">
+      <span aria-hidden className="grid size-8 place-items-center rounded-full bg-amber text-sm text-on-amber shadow-[0_0_20px_var(--glow)]">
         ✦
       </span>
       creatora
@@ -38,7 +38,8 @@ export function TopBar({ unreadNotifications }: { unreadNotifications: number })
   }
 
   return (
-    <header className="sticky top-0 z-30 bg-bg/70 px-3 pt-3 backdrop-blur-xl sm:px-5 lg:pl-28">
+    <header className="sticky top-0 z-30 bg-bg/65 px-3 pt-3 backdrop-blur-xl sm:px-5 lg:pl-28">
+      <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-line to-transparent" />
       <div className="mx-auto flex max-w-7xl items-center gap-2 sm:gap-3">
         <Link href="/home" className="mr-auto shrink-0 rounded-full focus-visible:outline-offset-4" aria-label="Creatora home">
           <Wordmark />

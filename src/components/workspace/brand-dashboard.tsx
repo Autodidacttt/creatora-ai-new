@@ -101,7 +101,7 @@ export function BrandDashboard() {
             {o?.deadlines.map((d) => (
               <li key={d.campaign_id}>
                 <Link href={`/campaigns/${d.campaign_id}`} className="block rounded-2xl bg-card/70 p-3 hover:bg-card">
-                  <span className="flex items-center gap-1.5 text-sm font-medium">{d.is_sprint && <Zap className="size-3.5 text-amber-2" aria-label="Sprint" />}<span className="truncate">{d.title}</span></span>
+                  <span className="flex items-center gap-1.5 text-sm font-medium">{d.is_sprint && <Zap className="size-3.5 text-amber-ink" aria-label="Sprint" />}<span className="truncate">{d.title}</span></span>
                   <span className="mt-1 flex flex-wrap items-center gap-2 text-xs text-ink-2">
                     {d.is_sprint ? <Countdown to={d.due_at} compact /> : <span>Due {formatDateTime(d.due_at)}</span>}
                     <span>{d.open_projects} active project{d.open_projects === 1 ? "" : "s"}</span>

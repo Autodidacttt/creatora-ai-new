@@ -27,7 +27,7 @@ export function CreatorResultCard({ creator, highlightTools = [], score, scoreLa
   const tools = [...creator.tools].sort((a, b) => Number(highlightTools.includes(b.id)) - Number(highlightTools.includes(a.id)));
 
   return (
-    <article className="glass group relative flex flex-col overflow-hidden rounded-[2rem] transition-all duration-300 hover:-translate-y-1 hover:shadow-lift">
+    <article className="glass glow-hover group relative flex flex-col overflow-hidden rounded-[2rem] transition-all duration-300 hover:-translate-y-1">
       <div className="grid h-32 grid-cols-3 gap-0.5 overflow-hidden">
         {[0, 1, 2].map((i) => {
           const p = creator.preview[i];

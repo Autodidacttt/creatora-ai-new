@@ -54,7 +54,7 @@ export function BriefDetails({ campaign: c }: { campaign: CampaignCard }) {
       </GlassPanel>
 
       <GlassPanel className="p-5 sm:p-7">
-        <h2 className="display mb-3 flex items-center gap-2 text-lg"><Scale className="size-5 text-amber-2" /> Commercial use & rights</h2>
+        <h2 className="display mb-3 flex items-center gap-2 text-lg"><Scale className="size-5 text-amber-ink" /> Commercial use & rights</h2>
         <div className="grid gap-2 sm:grid-cols-2">
           <Row icon={<BadgeCheck />} label="Usage rights">{c.usage_rights.map((u) => labelOf(USAGE_RIGHTS, u)).join(", ") || "To be agreed"}</Row>
           <Row icon={<Globe2 />} label="Territory">{c.territory}</Row>

@@ -186,7 +186,7 @@ export function Thread({ conversationId }: { conversationId: string }) {
                 {newDay && <p className="py-3 text-center text-[11px] font-medium uppercase tracking-wider text-ink-3">{dayLabel(m.created_at)}</p>}
                 <div className="flex justify-center py-1.5">
                   <p className="flex max-w-[88%] items-start gap-2 rounded-2xl border border-line bg-card/60 px-3.5 py-2 text-xs text-ink-2">
-                    <Workflow className="mt-0.5 size-3.5 shrink-0 text-amber-2" aria-hidden />
+                    <Workflow className="mt-0.5 size-3.5 shrink-0 text-amber-ink" aria-hidden />
                     <span><span className="sr-only">Project update: </span>{m.body}</span>
                   </p>
                 </div>

@@ -81,7 +81,7 @@ export function ReviewInbox({ filters, setFilters, selected, onSelect, compare, 
               <button type="button" onClick={() => (compare ? toggle(i.id) : onSelect(i.id))} aria-pressed={compare ? picked : i.id === selected}
                 className={cn("flex w-full items-center gap-3 rounded-2xl p-2.5 text-left transition-colors",
                   i.id === selected && !compare ? "bg-card shadow-soft ring-1 ring-amber/50" : "hover:bg-card/70", !i.is_latest && "opacity-70")}>
-                {compare && (picked ? <CheckSquare className="size-4 shrink-0 text-amber-2" /> : <Square className="size-4 shrink-0 text-ink-3" />)}
+                {compare && (picked ? <CheckSquare className="size-4 shrink-0 text-amber-ink" /> : <Square className="size-4 shrink-0 text-ink-3" />)}
                 <MediaThumb mediaType={i.cover?.media_type} path={i.cover?.thumbnail_path} urls={thumbs.data} className="size-14" />
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-1.5">

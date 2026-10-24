@@ -13,7 +13,7 @@ import { Swatch } from "./guideline-summary";
 
 const STATUS: Record<CheckStatus, { icon: ReactNode; label: string; className: string }> = {
   pass: { icon: <CheckCircle2 />, label: "Pass", className: "text-success" },
-  warn: { icon: <AlertTriangle />, label: "Check", className: "text-amber-2" },
+  warn: { icon: <AlertTriangle />, label: "Check", className: "text-amber-ink" },
   fail: { icon: <XCircle />, label: "Fail", className: "text-danger" },
   na: { icon: <MinusCircle />, label: "N/A", className: "text-ink-3" },
 };
@@ -99,7 +99,7 @@ export function AiReviewPanel({ submissionId, ai, onRetry }: { submissionId: str
   if (!ai || ai.status === "pending" || ai.status === "running") {
     return (
       <div className="glass flex items-center gap-3 rounded-[1.75rem] p-4" role="status">
-        <Loader2 className="size-5 animate-spin text-amber-2" aria-hidden />
+        <Loader2 className="size-5 animate-spin text-amber-ink" aria-hidden />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold">Analysing this submission…</p>
           <p className="text-xs text-ink-2">Measuring colours and format, and asking the AI to check logo, style and typography. Usually under a minute.</p>

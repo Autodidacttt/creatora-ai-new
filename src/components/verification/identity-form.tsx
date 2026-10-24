@@ -24,7 +24,7 @@ export function IdentityForm({ status, onSubmitted }: { status: MyVerification; 
   if (id?.status === "pending") {
     return (
       <div className="space-y-1 text-sm" role="status">
-        <p className="flex items-center gap-2"><Clock className="size-4 text-amber-2" /> <strong>Pending review</strong> · submitted {new Date(id.submitted_at).toLocaleDateString()}</p>
+        <p className="flex items-center gap-2"><Clock className="size-4 text-amber-ink" /> <strong>Pending review</strong> · submitted {new Date(id.submitted_at).toLocaleDateString()}</p>
         {id.mock_result && <p className="text-xs text-ink-3">Automated ID check: {id.mock_result} — <em>Simulated check, not a government verification</em>. A trust-team member makes the decision.</p>}
       </div>
     );

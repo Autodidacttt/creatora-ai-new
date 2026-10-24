@@ -140,7 +140,7 @@ export function AiFinder() {
   return (
     <section className="glass space-y-4 rounded-[2rem] p-4 sm:p-5" aria-labelledby="ai-finder-title">
       <div className="flex flex-wrap items-center gap-2">
-        <h2 id="ai-finder-title" className="display flex items-center gap-2 text-xl"><Wand2 className="size-5 text-amber-2" /> Find with AI</h2>
+        <h2 id="ai-finder-title" className="display flex items-center gap-2 text-xl"><Wand2 className="size-5 text-amber-ink" /> Find with AI</h2>
         <span className="text-xs text-ink-3">Describe your idea, get creators ranked by how well they fit it.</span>
       </div>
       <form onSubmit={(e) => { e.preventDefault(); void find(); }} className="space-y-2">

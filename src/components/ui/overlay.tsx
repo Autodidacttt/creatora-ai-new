@@ -22,10 +22,10 @@ export function Dialog({ open, onOpenChange, title, description, children, class
   return (
     <D.Root open={open} onOpenChange={onOpenChange}>
       <D.Portal>
-        <D.Overlay className="fixed inset-0 z-50 bg-black/35 backdrop-blur-sm data-[state=open]:animate-in" />
+        <D.Overlay className="astral-fade fixed inset-0 z-50 bg-[#05060f]/45 backdrop-blur-sm dark:bg-[#05060f]/65" />
         <D.Content
           className={cn(
-            "glass-strong fixed left-1/2 top-1/2 z-50 max-h-[92dvh] w-[calc(100vw-1.5rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-[2rem] p-5 sm:p-7 focus:outline-none",
+            "glass-strong astral-pop fixed left-1/2 top-1/2 z-50 max-h-[92dvh] w-[calc(100vw-1.5rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-[2rem] p-5 sm:p-7 focus:outline-none",
             width,
             className,
           )}
@@ -58,7 +58,7 @@ export const MenuTrigger = DM.Trigger;
 export function MenuContent({ children, align = "end", className }: { children: ReactNode; align?: "start" | "end" | "center"; className?: string }) {
   return (
     <DM.Portal>
-      <DM.Content align={align} sideOffset={8} className={cn("glass-strong z-50 min-w-48 rounded-2xl p-1.5", className)}>
+      <DM.Content align={align} sideOffset={8} className={cn("glass-strong astral-pop z-50 min-w-48 rounded-2xl p-1.5 [transform-origin:var(--radix-dropdown-menu-content-transform-origin)]", className)}>
         {children}
       </DM.Content>
     </DM.Portal>
@@ -70,7 +70,7 @@ export function MenuItem({ children, onSelect, className, danger }: { children: 
     <DM.Item
       onSelect={onSelect}
       className={cn(
-        "flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-sm outline-none data-[highlighted]:bg-ink/5 [&_svg]:size-4",
+        "flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-sm outline-none transition-colors data-[highlighted]:bg-ink/[0.06] data-[highlighted]:[&_svg]:text-amber-ink [&_svg]:size-4",
         danger ? "text-danger" : "text-ink",
         className,
       )}
@@ -89,7 +89,7 @@ export const PopoverTrigger = P.Trigger;
 export function PopoverContent({ children, className, align = "start" }: { children: ReactNode; className?: string; align?: "start" | "end" | "center" }) {
   return (
     <P.Portal>
-      <P.Content align={align} sideOffset={8} collisionPadding={12} className={cn("glass-strong z-50 rounded-2xl p-2 focus:outline-none", className)}>
+      <P.Content align={align} sideOffset={8} collisionPadding={12} className={cn("glass-strong astral-pop z-50 rounded-2xl p-2 focus:outline-none [transform-origin:var(--radix-popover-content-transform-origin)]", className)}>
         {children}
       </P.Content>
     </P.Portal>

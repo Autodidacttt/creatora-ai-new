@@ -17,7 +17,7 @@ export function StatBlob({ value, label, href, className, accent }: {
       <div
         className={cn(
           "notched h-full rounded-[1.75rem] p-4 transition-transform duration-300 group-hover:-translate-y-0.5",
-          accent ? "bg-amber text-on-amber" : "bg-card text-ink shadow-soft",
+          accent ? "bg-amber text-on-amber shadow-[0_14px_40px_-16px_var(--glow)]" : "bg-card text-ink shadow-soft ring-1 ring-inset ring-line group-hover:ring-amber/35",
         )}
       >
         <Counter value={value} className="display block text-3xl tabular-nums sm:text-4xl" />

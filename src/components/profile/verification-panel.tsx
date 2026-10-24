@@ -21,7 +21,7 @@ export function VerificationPanel({ profile }: { profile: FullProfile }) {
     <section aria-labelledby="trust-h" className="glass rounded-[2rem] p-5">
       <div className="mb-3 flex items-center justify-between">
         <h2 id="trust-h" className="display flex items-center gap-2 text-lg">
-          <ShieldCheck className="size-5 text-amber-2" /> Trust & verification
+          <ShieldCheck className="size-5 text-amber-ink" /> Trust & verification
         </h2>
         {profile.is_verified && (
           <span className="flex items-center gap-1 rounded-full bg-amber px-2.5 py-1 text-xs font-semibold text-on-amber">

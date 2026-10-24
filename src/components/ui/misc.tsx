@@ -2,8 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import { Switch as S } from "radix-ui";
-import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AstralLoader } from "@/components/astral/ornaments";
 
 /** Calls onVisible when scrolled near the bottom — drives infinite scroll. */
 export function InfiniteSentinel({ onVisible, disabled, loading }: { onVisible: () => void; disabled?: boolean; loading?: boolean }) {
@@ -19,7 +19,7 @@ export function InfiniteSentinel({ onVisible, disabled, loading }: { onVisible: 
   }, [disabled]);
   return (
     <div ref={ref} className="flex h-16 items-center justify-center">
-      {loading && <Loader2 className="size-5 animate-spin text-ink-3" aria-label="Loading more" />}
+      {loading && <AstralLoader className="size-10" label="Loading more" />}
     </div>
   );
 }
@@ -31,7 +31,7 @@ export function Switch({ checked, onCheckedChange, id, label }: { checked: boole
       checked={checked}
       onCheckedChange={onCheckedChange}
       aria-label={label}
-      className={cn("relative h-6 w-11 shrink-0 rounded-full transition-colors", checked ? "bg-amber" : "bg-ink/15")}
+      className={cn("relative h-6 w-11 shrink-0 rounded-full transition-colors", checked ? "bg-amber shadow-[0_0_14px_-2px_var(--glow)]" : "bg-ink/15")}
     >
       <S.Thumb className="block size-5 translate-x-0.5 rounded-full bg-white shadow transition-transform data-[state=checked]:translate-x-[22px]" />
     </S.Root>

@@ -40,8 +40,8 @@ function Hero() {
         <div>
           <p className="eyebrow">{greeting()}, {me.display_name.split(" ")[0]}</p>
           <h1 className="display mt-2 text-4xl leading-[0.95] sm:text-5xl">
-            {me.role === "brand" ? (<>Find the creators<br />your brief <span className="text-amber-2">deserves</span></>)
-              : (<>Make it. Show the<br /><span className="text-amber-2">workflow.</span> Get hired.</>)}
+            {me.role === "brand" ? (<>Find the creators<br />your brief <span className="text-amber-ink">deserves</span></>)
+              : (<>Make it. Show the<br /><span className="text-amber-ink">workflow.</span> Get hired.</>)}
           </h1>
           <div className="mt-6 flex flex-wrap gap-3">
             {me.role === "brand" ? (

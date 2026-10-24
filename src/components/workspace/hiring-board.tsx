@@ -47,7 +47,7 @@ function CandidateCard({ c, campaign, urls, picked, onPick, onChanged }: {
       <div className="flex items-start gap-3">
         {picked !== null && (
           <button type="button" onClick={onPick} aria-pressed={picked} aria-label={`Compare ${c.creator.display_name}`} className="mt-1">
-            {picked ? <CheckSquare className="size-4 text-amber-2" /> : <Square className="size-4 text-ink-3" />}
+            {picked ? <CheckSquare className="size-4 text-amber-ink" /> : <Square className="size-4 text-ink-3" />}
           </button>
         )}
         <Link href={`/u/${c.creator.username}`} className="flex min-w-0 flex-1 items-center gap-3">

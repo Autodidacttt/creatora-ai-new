@@ -13,7 +13,7 @@ export function ProjectCard({ p, view, href, className }: { p: ProjectSummary; v
   const sprintOpen = p.campaign.is_sprint && p.campaign.sprint_deadline && !p.campaign.sprint_closed;
   const needsMe = view === "creator" ? p.status === "revision_requested" || p.status === "hired" : ["awaiting_funding", "submitted", "resubmitted", "approved"].includes(p.status);
   return (
-    <Link href={href} className={cn("glass group block rounded-[1.75rem] p-4 transition-all hover:-translate-y-0.5 hover:shadow-lift sm:p-5", needsMe && "ring-2 ring-amber/60", className)}>
+    <Link href={href} className={cn("glass glow-hover group block rounded-[1.75rem] p-4 transition-all hover:-translate-y-0.5 sm:p-5", needsMe && "ring-2 ring-amber/60", className)}>
       <div className="flex items-start gap-3">
         <Avatar src={other.avatar_url} name={other.display_name} size="md" verified={other.is_verified} />
         <div className="min-w-0 flex-1">

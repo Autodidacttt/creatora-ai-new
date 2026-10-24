@@ -50,7 +50,7 @@ export function ToggleChip({ selected, onClick, children, disabled }: {
       aria-pressed={selected}
       className={cn(
         "rounded-full border px-3 py-1.5 text-sm transition-all disabled:opacity-50",
-        selected ? "border-amber bg-amber text-on-amber shadow-sm" : "border-line bg-card text-ink hover:border-ink/30",
+        selected ? "border-amber bg-amber text-on-amber shadow-[0_0_14px_-4px_var(--glow)]" : "border-line bg-card text-ink hover:border-amber/40",
       )}
     >
       {children}

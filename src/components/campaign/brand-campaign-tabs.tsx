@@ -246,8 +246,8 @@ export function PipelineTab({ campaign }: { campaign: CampaignCard }) {
             <span className="min-w-0">
               <span className="block truncate text-sm font-semibold">{p.creator.display_name}</span>
               <span className="block truncate text-xs text-ink-3">{p.applied ? "Applied" : "Added from discovery"} · {timeAgo(p.created_at)}{p.stage === "completed" && " · completed"}</span>
-              {p.stage === "awaiting_funding" && <span className="mt-0.5 block text-[11px] font-medium text-amber-2">Hired · awaiting funding — not counted until funded</span>}
-              {p.added_while_draft && <span className="mt-0.5 block text-[11px] text-amber-2" title="Added before the brief was published. It stays, but new shortlists need a published brief.">Shortlisted while the brief was a draft</span>}
+              {p.stage === "awaiting_funding" && <span className="mt-0.5 block text-[11px] font-medium text-amber-ink">Hired · awaiting funding — not counted until funded</span>}
+              {p.added_while_draft && <span className="mt-0.5 block text-[11px] text-amber-ink" title="Added before the brief was published. It stays, but new shortlists need a published brief.">Shortlisted while the brief was a draft</span>}
             </span>
           </Link>
           <div className="flex gap-1.5">

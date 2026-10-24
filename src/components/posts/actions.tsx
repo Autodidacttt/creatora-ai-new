@@ -70,7 +70,7 @@ export function SaveButton({ postId, saved, size = "md" }: { postId: string; sav
       className={cn("inline-flex items-center gap-1.5 rounded-full font-medium transition-colors",
         size === "sm" ? "p-1 text-xs" : "bg-card px-3.5 py-2 text-sm shadow-sm hover:shadow-md")}
     >
-      <Bookmark className={cn(size === "sm" ? "size-3.5" : "size-4", s.on && "fill-amber text-amber-2")} />
+      <Bookmark className={cn(size === "sm" ? "size-3.5" : "size-4", s.on && "fill-amber text-amber-ink")} />
       {size === "md" && <span>{s.on ? "Saved" : "Save"}</span>}
     </button>
   );

@@ -13,7 +13,7 @@ import { SubmissionStatusChip } from "./status";
 
 const ICON: Record<CheckStatus, React.ReactNode> = {
   pass: <CheckCircle2 className="size-4 text-success" aria-label="Pass" />,
-  warn: <AlertTriangle className="size-4 text-amber-2" aria-label="Check" />,
+  warn: <AlertTriangle className="size-4 text-amber-ink" aria-label="Check" />,
   fail: <XCircle className="size-4 text-danger" aria-label="Fail" />,
   na: <MinusCircle className="size-4 text-ink-3" aria-label="Not applicable" />,
 };

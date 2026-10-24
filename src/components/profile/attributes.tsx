@@ -69,7 +69,7 @@ export function CreatorAttributes({ profile }: { profile: FullProfile }) {
 export function WorkflowOverview({ text }: { text: string }) {
   return (
     <section aria-labelledby="wf-overview" className="glass rounded-[2rem] p-5">
-      <h2 id="wf-overview" className="display mb-2 flex items-center gap-2 text-lg"><Workflow className="size-5 text-amber-2" /> How I work</h2>
+      <h2 id="wf-overview" className="display mb-2 flex items-center gap-2 text-lg"><Workflow className="size-5 text-amber-ink" /> How I work</h2>
       <p className="whitespace-pre-line text-sm leading-relaxed text-ink-2">{text}</p>
     </section>
   );
