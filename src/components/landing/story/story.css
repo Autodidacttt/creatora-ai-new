@@ -1,0 +1,121 @@
+/* Scroll story styles — ported from the reference HTML and mapped to the cosmic tokens. Global, but every class is
+   prefixed `cs-` (CSS modules are not used: the Tailwind Turbopack rule treats every *.css file as global). */
+.cs-main { position: relative; }
+.cs-stage {
+  position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden;
+  /* translucent so the cosmic backdrop (stars, shooting stars) shows behind the canvas */
+  background: radial-gradient(ellipse at 50% 40%, rgba(28, 24, 16, 0.85), rgba(18, 16, 13, 0.25) 70%);
+}
+.cs-canvas, .cs-arrows { position: absolute; inset: 0; width: 100%; height: 100%; }
+.cs-arrows { pointer-events: none; }
+.cs-arrows path { fill: none; stroke: var(--amber); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+
+.cs-sc { position: absolute; opacity: 0; visibility: hidden; will-change: opacity, transform; }
+.cs-bot { left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + max(7svh, 76px)); text-align: center; padding: 0 22px; }
+.cs-bot h1, .cs-bot h2 { margin: 0 auto 14px; font-weight: 600; letter-spacing: -0.04em; line-height: 1.02; max-width: 760px; }
+.cs-bot h1 { font-size: clamp(36px, 9vw, 68px); }
+.cs-bot h2 { font-size: clamp(28px, 6.4vw, 46px); }
+.cs-bot p { margin: 0 auto; color: var(--ink-2); font-size: clamp(14px, 3.6vw, 17px); line-height: 1.55; max-width: 520px; }
+.cs-em { font-style: normal; color: var(--amber); text-shadow: 0 0 30px rgba(var(--glow-rgb), 0.35); }
+
+.cs-col { left: 0; right: 0; top: 24svh; bottom: 0; display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 0 20px; }
+@media (min-aspect-ratio: 1/1) {
+  .cs-col { left: 38vw; top: 0; justify-content: center; padding: 0 5vw 0 0; }
+}
+/* ultrawide: keep the cards near the figure instead of drifting to the far edge */
+@media (min-aspect-ratio: 21/9) {
+  .cs-col { left: 44vw; right: 8vw; }
+}
+
+.cs-hum { inset: 0; }
+.cs-skills { list-style: none; margin: 0; padding: 0; }
+.cs-skill {
+  position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 7px; padding: 7px 13px 7px 10px;
+  border-radius: 999px; font-size: 13px; font-weight: 500; white-space: nowrap;
+  background: rgba(30, 25, 17, 0.74); border: 1px solid var(--glass-border);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); opacity: 0; will-change: transform, opacity;
+}
+.cs-skill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+.cs-cap { position: absolute; left: 0; right: 0; text-align: center; padding: 0 20px; opacity: 0; }
+.cs-cap > b { font-size: 17px; letter-spacing: -0.01em; }
+.cs-role { color: var(--ink-2); font-size: 14px; margin-left: 8px; }
+.cs-meta { font-size: 13px; color: var(--ink-2); margin-top: 4px; }
+.cs-meta b { color: var(--ink); font-weight: 600; }
+.cs-tag { display: inline-block; margin-top: 8px; font-size: 12px; color: var(--ink-3); border: 1px dashed var(--line); border-radius: 999px; padding: 5px 11px; }
+.cs-wf { position: absolute; left: 50%; width: min(calc(100% - 40px), 420px); transform: translateX(-50%); }
+.cs-wf h3 { margin: 0 0 8px; font-size: 11px; font-weight: 500; color: var(--ink-3); text-align: center; letter-spacing: 0.08em; text-transform: uppercase; }
+.cs-flow { display: flex; justify-content: space-between; gap: 22px; }
+.cs-st { flex: 1; text-align: center; padding: 10px 4px; border-radius: 999px; font-size: 13px; font-weight: 500; opacity: 0; }
+
+.cs-match { width: min(100%, 400px); }
+.cs-match h2 { margin: 0 0 14px; font-size: clamp(24px, 6vw, 34px); letter-spacing: -0.035em; line-height: 1.08; font-weight: 600; }
+.cs-card { border-radius: 26px; }
+.cs-brief { padding: 14px 16px; font-size: 14px; line-height: 1.5; min-height: 92px; margin-bottom: 12px; }
+.cs-row { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 12px 14px; margin-bottom: 8px; border-radius: 18px; opacity: 0; }
+.cs-row b { font-size: 14px; font-weight: 600; }
+.cs-row span { font-size: 12px; color: var(--ink-2); }
+.cs-row em { font-style: normal; color: var(--amber); font-size: 14px; font-weight: 600; grid-row: 1; grid-column: 2; }
+.cs-bar { grid-column: 1 / 3; height: 4px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.cs-bar i { display: block; height: 100%; width: 0; background: var(--amber); border-radius: 4px; }
+.cs-note { font-size: 12px; color: var(--ink-3); margin-top: 6px; }
+
+.cs-stack { position: relative; height: 256px; perspective: 900px; margin-bottom: 6px; }
+.cs-ly { position: absolute; left: 0; right: 0; top: 0; padding: 14px 16px; border-radius: 20px; will-change: transform, opacity; }
+.cs-ly b, .cs-ck b, .cs-step b { display: block; font-size: 14px; font-weight: 600; }
+.cs-ly span, .cs-ck span, .cs-step span { font-size: 12px; color: var(--ink-2); }
+.cs-ck { display: flex; align-items: center; gap: 12px; padding: 12px 14px; margin-bottom: 8px; border-radius: 18px; opacity: 0; }
+.cs-ck svg { width: 26px; height: 26px; flex: none; }
+.cs-ck svg * { fill: none; stroke: var(--amber); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+
+/* release pipeline (new scene): compact steps linked by drawn arrows */
+.cs-steps { display: flex; flex-direction: column; gap: 14px; margin-bottom: 4px; }
+.cs-step { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 16px; opacity: 0; }
+.cs-step i { flex: none; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--amber); transition: background-color 0.3s, box-shadow 0.3s; }
+.cs-step[data-done="true"] i { background: var(--amber); box-shadow: 0 0 10px var(--amber); }
+
+.cs-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 22px; }
+.cs-btn {
+  display: inline-flex; align-items: center; gap: 14px; padding: 8px 8px 8px 22px; border-radius: 999px;
+  background: var(--ink); color: var(--on-amber); font-weight: 600; font-size: 15px; text-decoration: none;
+  transition: scale 0.3s var(--spring-glide), box-shadow 0.3s;
+}
+.cs-btn:hover { box-shadow: 0 14px 44px -14px var(--glow); }
+.cs-btn:active { scale: 0.96; transition-duration: 0.08s; }
+.cs-btn i { width: 38px; height: 38px; border-radius: 50%; background: var(--amber); display: grid; place-items: center; font-style: normal; font-size: 16px; }
+.cs-ghost { background: transparent; color: var(--ink); border: 1px solid var(--glass-border); padding: 13px 22px; }
+.cs-btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
+
+.cs-hint { left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); text-align: center; font-size: 12px; color: var(--ink-3); }
+.cs-hint i { display: block; width: 1px; height: 26px; margin: 8px auto 0; background: linear-gradient(var(--amber), transparent); animation: scroll-hint 1.8s ease-in-out infinite; }
+
+/* progress indicator with keyboard-reachable chapter dots */
+.cs-prog { position: fixed; right: max(6px, env(safe-area-inset-right)); top: 50%; translate: 0 -50%; z-index: 20; display: flex; align-items: center; gap: 4px; transition: opacity 0.4s; }
+.cs-prog[data-hidden="true"] { opacity: 0; pointer-events: none; }
+.cs-track { width: 2px; height: 90px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.cs-track i { display: block; width: 100%; height: 0; background: var(--amber); border-radius: 2px; }
+.cs-dots { display: flex; flex-direction: column; }
+.cs-dot { display: grid; place-items: center; width: 24px; height: 24px; border: 0; background: none; padding: 0; cursor: pointer; border-radius: 999px; }
+.cs-dot::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: rgba(244, 239, 230, 0.28); transition: background-color 0.3s, box-shadow 0.3s, scale 0.3s var(--spring-glide); }
+.cs-dot:hover::after { background: rgba(244, 239, 230, 0.6); scale: 1.3; }
+.cs-dot[aria-current="step"]::after { background: var(--amber); box-shadow: 0 0 10px var(--amber); scale: 1.3; }
+
+@media (max-width: 480px) {
+  .cs-track { display: none; }
+  .cs-dot { width: 20px; height: 20px; }
+}
+@media (max-height: 560px) {
+  .cs-stack { height: 210px; }
+  .cs-brief { min-height: 72px; }
+}
+
+/* Phones: keep cards and captions clear of the chapter dots on the right edge */
+@media (max-width: 639px) {
+  .cs-col { padding: 0 36px 0 16px; }
+  .cs-bot { padding: 0 34px; }
+}
+/* Short screens (e.g. 360×640): tighten the release pipeline so its note stays on screen */
+@media (max-height: 700px) {
+  .cs-steps { gap: 10px; }
+  .cs-step { padding: 7px 12px; }
+  .cs-col { gap: 12px; }
+}
