@@ -7,6 +7,7 @@ import { MotionConfig } from "motion/react";
 import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/overlay";
 import { AuthFragmentForwarder } from "@/components/auth-fragment-forwarder";
+import { EffectsProvider, useEffects } from "@/components/astral/effects";
 
 export function Providers({ children }: { children: ReactNode }) {
   const [client] = useState(
@@ -18,8 +19,9 @@ export function Providers({ children }: { children: ReactNode }) {
       }),
   );
   return (
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-      <MotionConfig reducedMotion="user">
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+      <EffectsProvider>
+      <EffectsMotion>
       <QueryClientProvider client={client}>
         <TooltipProvider>
           <AuthFragmentForwarder />
@@ -27,12 +29,19 @@ export function Providers({ children }: { children: ReactNode }) {
           <Toaster
             position="bottom-center"
             toastOptions={{
-              className: "!rounded-2xl !border-glass-border !bg-glass-strong !text-ink !backdrop-blur-xl !shadow-lift",
+              className: "!rounded-2xl !border !border-glass-border !bg-glass-strong !text-ink !backdrop-blur-xl !shadow-lift",
             }}
           />
         </TooltipProvider>
       </QueryClientProvider>
-      </MotionConfig>
+      </EffectsMotion>
+      </EffectsProvider>
     </ThemeProvider>
   );
+}
+
+/** Framer Motion follows the effects preference: transforms are dropped for "reduced"/"off" (and for OS reduced motion). */
+function EffectsMotion({ children }: { children: ReactNode }) {
+  const { level } = useEffects();
+  return <MotionConfig reducedMotion={level === "full" ? "user" : "always"}>{children}</MotionConfig>;
 }
