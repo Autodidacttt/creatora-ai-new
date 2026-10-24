@@ -85,8 +85,21 @@ export function useCanvasLoop(
       t += dt;
       paint(dt);
     };
+    // Don't compete with the page's own loading: animation starts once the page has loaded and the browser is idle
+    // (the first static frame is painted immediately by size()).
+    let ready = document.readyState === "complete" && !!(window as { __skyReady?: boolean }).__skyReady;
+    let idleId = 0;
+    const whenReady = () => {
+      const go = () => { ready = true; (window as { __skyReady?: boolean }).__skyReady = true; start(); };
+      const idle = () => {
+        if ("requestIdleCallback" in window) idleId = window.requestIdleCallback(go, { timeout: 1500 });
+        else idleId = globalThis.setTimeout(go, 300) as unknown as number;
+      };
+      if (document.readyState === "complete") idle(); else window.addEventListener("load", idle, { once: true });
+    };
     const start = () => {
       if (!animate || raf || document.hidden || !onScreen) return;
+      if (!ready) return;
       last = 0;
       raf = requestAnimationFrame(tick);
     };
@@ -96,6 +109,7 @@ export function useCanvasLoop(
     };
 
     size();
+    if (animate && !ready) { paint(0); whenReady(); }
     const ro = new ResizeObserver(size);
     ro.observe(canvas);
     const io = new IntersectionObserver(([e]) => {
@@ -114,6 +128,7 @@ export function useCanvasLoop(
 
     return () => {
       stop();
+      if ("cancelIdleCallback" in window) window.cancelIdleCallback(idleId); else clearTimeout(idleId);
       ro.disconnect();
       io.disconnect();
       mo.disconnect();
