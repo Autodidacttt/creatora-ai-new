@@ -13,12 +13,46 @@ All data comes from Supabase and every action persists. New accounts start compl
 
 ## Recent changes
 
-### 2026-10-24: Astral theme and a scroll-driven landing page
+### 2026-10-24: Cosmic theme, app-open transitions and the scroll-story landing
+
+Visual-only change: no routes, data, permissions, database or flows changed. After the change, `test:rls` passes 103/103, `test:hiring` 49/49 and `test:workspace` 97/97, plus 25/25 UI checks: scrolling, View Transitions, sheets, accessibility, reduced motion and no light-mode remnants. This supersedes the astral theme below.
+
+- **One cosmic theme. Light mode is removed:** next-themes, the theme toggle, light tokens and `dark:` variants are all gone, and the page sets `color-scheme: dark`.
+  - Tokens come from the landing reference: warm ink `#12100d`, warm starlight text and an amber star `#fdb828`, with faint indigo, violet and teal nebula tints.
+  - Text stays ≥ 5.4:1 on every surface. The chart palette was re-validated on the new surfaces.
+- **Glass material:**
+  - All glass gets grain, a brighter top hairline and an inner highlight.
+  - Nav rail, bottom bar, admin nav, menus and popovers also get a gradient hairline ring (`.glass-surface`).
+  - Browsers without `backdrop-filter` get an opaque fallback.
+  - Active indicators glide between items, and the top bar gains glass as you scroll.
+- **App-open transitions:** clicking a nav item, card or list row grows the new page out of the pressed element (scale, opacity, blur-to-sharp and a rounded clip, ~420 ms spring).
+  - It uses React `<ViewTransition>` where the browser supports View Transitions, and a Framer spring otherwise.
+  - It is entry-only and never delays navigation. It doesn't run on refresh or URL filter changes.
+  - Dialogs grow from their trigger on larger screens and become bottom sheets on phones.
+- **Sky:** one canvas per page for the starfield (slow scroll parallax) and small, rare shooting stars (every 6–14 s).
+  - Intensity: landing rich, auth medium, app low, admin still and sparse with no shooting stars.
+  - Animation starts only after the page has loaded and the browser is idle.
+- **Landing page:** the reference HTML's scroll story, ported to typed React modules (`src/components/landing/story/`). It is client-only and code-split, with a no-shift server placeholder.
+  - Orb (shell, inner network, rings) → low-poly creator bust, skills ring, workflow arrows, brief → ranked creators, proof layers, rights checks.
+  - Two new scenes: **Verified people and companies** and **Fund, deliver, release** (test-mode escrow).
+  - CTA wired to sign-up, sign-in and the demo accounts. Live stats come from `/api/public-stats`, followed by a footer.
+  - Lenis was removed. The page keeps the reference's own eased scroll progress.
+- **Story improvements:**
+  - preallocated buffers instead of per-frame allocation
+  - adaptive quality (fewer shell and mesh edges, particles, hatching and shadow blur when frames slow down, and on phones)
+  - DPR cap per quality level, debounced resize, pause when offscreen or the tab is hidden
+  - cached DOM writes, with arrow geometry read before any write
+- **Story accessibility:** reduced motion shows static chapter snapshots, there's a visually hidden text version, a "Skip to sign up" link and keyboard chapter dots.
+- **Story layout fixes:** captions, the scroll hint and cards no longer collide on phones, short screens or ultrawide screens.
+- **Settings → Effects:** Full / Reduced / Off, saved in the browser and capped by OS reduced motion.
+- **One motion config:** spring and duration tokens live in `src/lib/motion.ts`, with matching CSS `linear()` springs in `globals.css`.
+
+### 2026-10-24: Astral theme and a scroll-driven landing page (superseded by the cosmic theme above)
 
 Visual-only change: no routes, data, permissions, database or flows were touched (`test:rls` 103/103, `test:hiring` 49/49, `test:workspace` 97/97 after the change).
 
 - **Astral theme.** The default theme is now *Night*: indigo-ink surfaces, hairline starlight borders, nebula washes and a drifting starfield, with amber as the single "star glow" accent. *Paper* (light) is the quiet version of the same design. Display type is Inter 600 with tight tracking, and the Bricolage font was dropped (−41 KiB of fonts).
-- **Effects layer** (`src/components/astral/`): starfield and constellation canvases, glow cards, magnetic buttons, scroll reveals, parallax, a scroll-progress bar, the constellation loader, Lenis smooth scrolling (landing only) and route transitions. See [Design system / astral theme](#design-system--astral-theme).
+- **Effects layer** (`src/components/astral/`): starfield and constellation canvases, glow cards, magnetic buttons, scroll reveals, parallax, a scroll-progress bar, the constellation loader, Lenis smooth scrolling (landing only) and route transitions. Its successor is documented in [Design system / cosmic theme](#design-system--cosmic-theme).
 - **Intensity by area:** rich on the landing page, medium on auth and onboarding, low in the creator/brand app, and minimal (still) in admin.
 - **Settings → Appearance:** Theme (Night / Paper / System) and **Effects (Full / Reduced / Off)**, saved per browser. OS reduced-motion caps effects at *Reduced*.
 - **Landing page rebuilt** as a scroll story:
@@ -204,7 +238,7 @@ New components: `chat/negotiation.tsx`, `workspace/hire-button.tsx` (replaces th
 | **Escrow (test mode) & licence records** | An internal escrow ledger (unfunded → funded → released / refunded / disputed) with an append-only `payment_events` log, labelled "Test mode, no real money moves". The brand gets clean originals only after approval **and** release of the payment, through a server route that returns a 60-second signed URL (clients have no read access to the originals bucket). Release completes the project, updates creator earnings, and issues a PDF licence record (terms snapshot, declared tools, asset SHA-256 hashes) that anyone can check at `/verify/{id}`. The creator gets an earnings receipt PDF. |
 | **Admin** | Platform stats, sign-ups chart and top tools. Users (verify or suspend), verification queue, content removal, report resolution, campaigns and audit log. |
 
-Design is the **astral** theme (see [Design system / astral theme](#design-system--astral-theme)). It keeps the glass panels, single amber accent, pill CTAs with an amber arrow, floating icon rail with bottom tabs on mobile and notched stat tiles. These sit on a night-sky backdrop with a starfield and constellation details, plus a quieter paper-and-ink light theme. Every screen has skeleton, empty, error-with-retry and toast states. Likes, saves and follows update optimistically.
+Design is the single dark **cosmic** theme (see [Design system / cosmic theme](#design-system--cosmic-theme)). It keeps the glass panels, single amber accent, pill CTAs with an amber arrow, floating icon rail with bottom tabs on mobile and notched stat tiles, all on a warm night-sky backdrop with a starfield and rare shooting stars. Every screen has skeleton, empty, error-with-retry and toast states. Likes, saves and follows update optimistically.
 
 ---
 
@@ -350,71 +384,88 @@ Run `npm run seed` to also seed the workspace demo states:
 
 ---
 
-## Design system / astral theme
+## Design system / cosmic theme
 
-A night sky behind the content, never in front of it. Effects are decorative only: `aria-hidden`, `pointer-events: none`, behind the page (`-z-10`). Content always wins.
+One dark theme: a warm night sky behind the content, never in front of it. Effects are decorative only (`aria-hidden`, `pointer-events: none`, behind the page at `-z-10`), and the content always wins.
 
-### Tokens (`src/app/globals.css`)
+### Tokens (`src/app/globals.css`, `:root` only)
 
-| Token | Night (default, `.dark`) | Paper (light) | Used for |
-|---|---|---|---|
-| `--bg` / `--bg-2` | `#0a0c1b` / `#10132b` | `#f6f4ef` / `#eeedf5` | Page and sky gradient |
-| `--ink` / `--ink-2` / `--ink-3` | starlight `#eef0fb` / `#b4b9d6` / `#8f95b9` | indigo ink `#16182e` / `#4a4e6b` / `#666a86` | Text (all ≥ 4.5:1 on every surface) |
-| `--card`, `--glass`, `--glass-strong`, `--glass-border`, `--glass-hi` | indigo glass, hairline `rgba(170,180,255,.13)` | white glass, ink hairline | Panels (`.glass`, `.glass-strong`) |
-| `--amber`, `--amber-2`, `--on-amber` | unchanged | unchanged | The one accent ("star glow") fills |
-| `--amber-ink` | `#ffc02e` | `#9a6200` | Amber **text and icons** (`text-amber-ink`, `.star-text`); AA on paper |
-| `--glow`, `--glow-rgb` | amber glow | darker amber glow | Shadows/halos (`shadow-[0_0_20px_var(--glow)]`) and canvas highlights |
-| `--star-rgb` | `226,230,255` | `30,33,66` | Starfield / constellation colour (canvas reads it live, follows theme switches) |
-| `--nebula-1..3` | violet, blue, amber washes | faint lavender, blue, amber | Backdrop gradients |
-| `--chart-1..3`, `--chart-glow` | validated on `#141834` | validated on white | Charts (glow line in Night only) |
+| Token | Value | Used for |
+|---|---|---|
+| `--bg`, `--bg-2`, `--card` | `#12100d`, `#17140f`, `#1d1914` | Page, raised surfaces |
+| `--ink`, `--ink-2`, `--ink-3` | `#f4efe6`, `#c8bfb1`, `#a39885` | Text: AA everywhere (`--ink-3` ≥ 5.4:1 even on glass over stars) |
+| `--amber`, `--amber-2`, `--amber-ink`, `--on-amber` | `#fdb828`, `#e9a514`, `#fdb828`, `#1a1408` | The one accent ("the star"), its text use, text on it |
+| `--glow`, `--glow-rgb` | amber at 40% / `253,184,40` | Halos on key actions and active indicators, canvas highlights |
+| `--glass`, `--glass-strong`, `--glass-fallback` | warm translucent fills | Glass material, plus an opaque fallback without `backdrop-filter` |
+| `--glass-border`, `--glass-border-hi`, `--glass-hi`, `--grain` | warm hairlines, inner highlight, SVG noise | The glass texture |
+| `--nebula-1..3` | indigo, violet, teal at 6–13% | Backdrop tints |
+| `--star-rgb` | `244,240,232` | Starlight (canvas) |
+| `--chart-1..3`, `--chart-glow` | validated on `#1d1914` and `#12100d` | Charts |
+| `--dur-open`, `--spring-open`, `--spring-glide`, `--ease-out` | 420 ms, CSS `linear()` springs | CSS mirror of the motion config |
 
-Utilities: `.display` (Inter 600, −0.04em), `.eyebrow`, `.star-text`, `.glow-hover` (hairline + glow on hover, no movement), `.shimmer`, `.fx-motion`, `.fx-only-full`, `.fx-decor`, `.fx-pin` / `.fx-stack`.
+Utilities: `.glass` / `.glass-strong` (the material), `.glass-surface` (adds the gradient hairline ring; nav and menus only, not scrollable containers), `.display`, `.eyebrow`, `.star-text`, `.glow-hover`, `.press` (haptic press), `.shimmer`, `.sheet` / `.pop` / `.fade` (overlay entrances), `.fx-motion` / `.fx-only-full` / `.fx-decor` (effects-aware).
 
-### Components (`src/components/astral/`)
+### Motion config (`src/lib/motion.ts`)
 
-| Component | What it does |
+`SPRING.open` (app-open, ~420 ms with slight overshoot), `SPRING.glide` (indicators), `SPRING.press`, `SPRING.gentle` (reveals, magnetic, tilt), plus `DURATION`, `EASE_OUT` and `OPEN` (start scale, clip radius, blur). The CSS `linear()` curves in `globals.css` are generated from the same stiffness, damping and mass, so View Transitions and Framer animations match.
+
+### Components (`src/components/cosmic/`)
+
+| File | What it does |
 |---|---|
 | `effects.tsx` | `EffectsProvider`, `useEffects()` (`pref`, effective `level`, `setPref`), `useFinePointerFx()`, `EFFECTS_SCRIPT` (sets `<html data-effects>` before first paint) |
-| `canvas-loop.ts` | Shared 2D-canvas driver: DPR capped at 1.5, ResizeObserver, theme-aware colours, rAF with an fps cap, pauses when the tab is hidden or the canvas is offscreen (IntersectionObserver). Static single frame when not animating |
-| `starfield-canvas.tsx` | `StarfieldCanvas`: drifting, twinkling stars (density scales with area, halved on phones), optional pointer parallax and shooting stars |
-| `constellation-network.tsx` | `ConstellationNetwork`: creator (●) and brand (◆) nodes, edges light up near the cursor or a tap. Lazy-loaded on the landing page |
-| `atmosphere.tsx` | `Atmosphere`: the fixed backdrop (nebula + starfield + orbit line-art), and **`SKY`, the per-area intensity table** |
-| `interactive.tsx` | `GlowCard` (cursor glow + optional tilt), `MagneticButton`, `ScrollReveal`, `Parallax`, `ScrollProgress`, `SmoothScroll` (Lenis), `PageTransition`, `SPRING` |
-| `scroll-section.tsx` | `ScrollSection`: an anchored section with a revealed eyebrow, title and lede |
-| `ornaments.tsx` | `OrbitLines`, `ConstellationMark` (empty states), `AstralLoader` (constellation loader) |
-| `appearance-settings.tsx` | Settings → Appearance card |
-
-Landing sections live in `src/components/landing/*` (`hero`, `how-it-works`, `feature-chapters` + `geo` + `previews`, `match-constellation`, `trust`, `live-stats`, `final-cta`).
+| `canvas-loop.ts` | Shared canvas driver: DPR cap, ResizeObserver, theme colours, rAF with an fps cap. Pauses when hidden or offscreen, and starts animating only after load and idle |
+| `starfield-canvas.tsx` | `StarfieldCanvas`: twinkling, drifting stars with scroll and pointer parallax and optional shooting stars, all on one canvas |
+| `shooting-stars.ts` | `createShootingStars()`: the small, rare meteor painter the starfield calls |
+| `atmosphere.tsx` | `Atmosphere`: fixed backdrop (nebula tints + sky canvas + still orbit line-art) and **`SKY`, the per-area intensity table** |
+| `app-open.tsx` | `AppOpenTracker` (records the pressed link or control) and `PageTransition` (route templates: `<ViewTransition enter="app-open">` or a Framer spring fallback). Also exports `pressOrigin()` for dialogs |
+| `interactive.tsx` | `GlowCard`, `MagneticButton`, `GlowButton` (magnetic + halo, key actions only), `ScrollReveal` |
+| `ornaments.tsx` | `OrbitLines`, `ConstellationMark` (empty states), `ConstellationLoader` |
+| `use-scrolled.ts` | Scroll-linked headers (top bar and landing nav gain glass) |
+| `appearance-settings.tsx` | Settings → Effects card |
 
 ### Tuning intensity
 
-Edit `SKY` in `src/components/astral/atmosphere.tsx`. The area comes from the route (`skyArea()`):
+Edit `SKY` in `src/components/cosmic/atmosphere.tsx`; the area comes from the route (`skyArea()`):
 
 | Area | Routes | Default |
 |---|---|---|
-| `landing` | `/` | dense (2.2), drifting, twinkling, pointer parallax, shooting stars, 60 fps |
-| `auth` | `/login`, `/signup`, `/onboarding`, `/auth/*`, `/verify*` | medium, 30 fps, orbits |
-| `app` | creator + brand app | sparse (0.9), slow, dimmed (0.65), 24 fps, orbits |
-| `admin` | `/admin/*` | very sparse, **still** (no animation) |
+| `landing` | `/` | dense, twinkling, pointer + scroll parallax, shooting stars every 6–12 s, 60 fps |
+| `auth` | `/login`, `/signup`, `/onboarding`, `/auth/*`, `/verify*` | medium, shooting stars every 7–14 s, 30 fps |
+| `app` | creator + brand app | sparse, dim, slow scroll parallax, faint shooting stars every 8–14 s, 30 fps |
+| `admin` | `/admin/*` | very sparse and **still**: no animation, no shooting stars |
 
-The hero network's node count is set in `constellation-network.tsx` (`density`, capped at 86 nodes on desktop and 34 on phones). Card tilt and magnetic strength are props on `GlowCard` and `MagneticButton`.
+### Effects setting
 
-### How the effects toggle works
-
-1. **Settings → Appearance** stores `creatora-effects` = `full` | `reduced` | `off` in `localStorage` (per browser; nothing goes to the database).
-2. The effective level is the user's choice capped by `prefers-reduced-motion` (OS reduced motion turns *full* into *reduced*).
-3. An inline script in `src/app/layout.tsx` writes it to `<html data-effects>` before first paint, so the CSS switches never flash or shift the layout. `EffectsProvider` keeps it in sync, including across tabs.
+1. **Settings → Effects** stores `creatora-effects` = `full` | `reduced` | `off` in `localStorage` (per browser, nothing in the database).
+2. The effective level is capped by `prefers-reduced-motion`.
+3. An inline script in `src/app/layout.tsx` writes it to `<html data-effects>` before first paint.
 4. What each level does:
    - **Full:** everything.
-   - **Reduced:** a static starfield and constellation frame, opacity-only reveals and route transitions, no parallax, tilt, magnetic pull, Lenis or pinning (the "How it works" sequence becomes a stacked list), and Framer Motion transforms off (`MotionConfig reducedMotion="always"`).
-   - **Off:** no canvases or decorative SVG motion; plain night or paper surfaces.
+   - **Reduced:** still sky, no shooting stars, no grow-from-icon (pages fade), no parallax, tilt or magnetic pull. Framer transforms are off and the landing story shows static chapter snapshots.
+   - **Off:** also no canvases or decorative motion.
+
+### Landing story modules (`src/components/landing/story/`)
+
+| File | Role |
+|---|---|
+| `math.ts` | Helpers from the reference (`cl`, `sm`, `sg`, `win`, `rotate`, `persp`), a seeded PRNG, colour constants |
+| `geometry.ts` | `getGeometry()`, built once: orb shell, inner network, rings, low-poly bust, portrait lines, hatched planes, mind network |
+| `timeline.ts` | `SCENES` (every scene window), `CHAPTERS` (dot targets / snapshots), `STORY_UNITS`, `STORY_VH`, `computeLayout()`, `computeFrame()` |
+| `draw-orb.ts`, `draw-figure.ts` | Canvas drawing with preallocated buffers and a `Quality` level (0–2) |
+| `overlays.tsx` | Scene markup, `bindOverlays()`, `updateOverlays()` (cached writes; arrow geometry read before writes) |
+| `engine.ts` | `runStory()`: eased scroll follow, pointer, adaptive quality + DPR cap, debounced resize, pause offscreen or hidden, reduced-motion snapshots, full cleanup |
+| `scroll-story.tsx`, `story-lazy.tsx` | Component and the code-split (`ssr: false`) loader with a no-shift placeholder |
+| `copy.ts`, `story-text.tsx` | Story copy (honest labels) and the visually hidden text version |
+| `story.css`, `classes.ts` | Story styles, prefixed `cs-` (the Tailwind Turbopack rule makes every `.css` global, so CSS modules aren't used) |
+
+To add a scene: add its copy in `copy.ts`, its markup in `overlays.tsx`, its window in `SCENES` (and a `CHAPTERS` entry), its updates in `updateOverlays()`, then raise `STORY_UNITS` / `STORY_VH` if it needs more scroll.
 
 ### Scrolling rules
 
-- Lenis runs **only on the landing page**. It is wheel-only (touch and keyboard stay native), and a scroll key pressed mid-glide cancels the glide.
-- Lenis ignores dialogs, menus, listboxes, Radix poppers and anything inside `[data-lenis-prevent]`.
-- The app (feeds, swipe/reels snap scrollers, chat, modals) never mounts it.
-- Pinning happens only at ≥ 1024 px with full effects (`.fx-pin` / `.fx-stack` in `globals.css`).
+- No smooth-scroll layer anywhere. The landing page uses native scroll plus the story's own eased progress.
+- Swipe/reels snap scrollers, chat, dialogs and every nested container scroll natively.
+- Chapter dots use native `scrollTo`.
 
 ## Architecture
 
@@ -458,9 +509,9 @@ Browser ──(publishable key + user JWT, RLS)──▶ Supabase Postgres / Sto
 | Group chats, collaborators, tasks | `private.sync_campaign_group`, `get_campaign_collaborators`, `*_campaign_task*` RPCs in `0022` → `src/services/workspace.ts` → `src/components/workspace/collaborators.tsx` |
 | Number inputs with − / + | `src/components/ui/stepper.tsx` |
 | Change permissions | Row rules: `0007_rls.sql`. Table/column privileges for API roles: `0011_api_grants.sql` (new Supabase projects grant nothing by default, so every new table needs RLS **and** explicit grants). Then extend `supabase/scripts/test-rls.ts` |
-| Restyle | Tokens in `src/app/globals.css`, primitives in `src/components/ui/*`, effects in `src/components/astral/*` (see [Design system](#design-system--astral-theme)) |
-| Effect intensity per area | `SKY` in `src/components/astral/atmosphere.tsx` |
-| Landing page sections / copy | `src/app/page.tsx` (data) → `src/components/landing/*` |
+| Restyle | Tokens in `src/app/globals.css`, primitives in `src/components/ui/*`, effects in `src/components/cosmic/*`, motion in `src/lib/motion.ts` (see [Design system](#design-system--cosmic-theme)) |
+| Effect intensity per area | `SKY` in `src/components/cosmic/atmosphere.tsx` |
+| Landing story scenes / copy / timing | `src/components/landing/story/*` (`copy.ts`, `timeline.ts`); stats + footer in `src/components/landing/*` |
 | Navigation | `src/config/nav.ts` |
 | Dashboard metrics / formulas | `supabase/migrations/0014_creator_dashboard.sql`, `0015_dashboard_engagement_series.sql` (`dashboard_*` RPCs) |
 | Dashboard UI / charts | `src/components/dashboard/*` (chart palette tokens `--chart-1..3` in `globals.css`, validated for light and dark) |
@@ -472,7 +523,7 @@ Browser ──(publishable key + user JWT, RLS)──▶ Supabase Postgres / Sto
 ```
 src/
   app/            (auth) login/signup · (onboarding) · (app) creator+brand screens · (admin) · api/
-  components/     astral/ (theme effects) landing/ ui/ layout/ profile/ posts/ discovery/ campaign/ swipe/ chat/ feed/ notifications/ admin/
+  components/     cosmic/ (theme effects) landing/ (story/) ui/ layout/ profile/ posts/ discovery/ campaign/ swipe/ chat/ feed/ notifications/ admin/
   features/       session context
   services/       data access (profiles, posts, social, discovery, campaigns, messaging, notifications, verification, admin)
   lib/            supabase/ (browser, server, admin, proxy) · ai/ · validation/ · utils/
