@@ -16,13 +16,13 @@ import { CreatorReel, fetchReelPosts, reelPostsKey } from "./creator-reel";
 const PAGE = 15;
 
 /** Reels-style viewer: one creator at a time; arrows / ←→ switch creators, scrolling moves through posts. */
-export function ReelsViewer({ campaignId, isBrand }: { campaignId: string | null; isBrand: boolean }) {
+export function ReelsViewer({ campaignId, isBrand, badges = {} }: { campaignId: string | null; isBrand: boolean; badges?: { phone?: boolean; identity?: boolean } }) {
   const db = useDb();
   const qc = useQueryClient();
   const [includeSeen, setIncludeSeen] = useState(false);
   const deck = useQuery({
-    queryKey: ["reels-deck", campaignId, includeSeen],
-    queryFn: () => getSwipeDeck(db, campaignId, PAGE, includeSeen),
+    queryKey: ["reels-deck", campaignId, includeSeen, !!badges.phone, !!badges.identity],
+    queryFn: () => getSwipeDeck(db, campaignId, PAGE, includeSeen, badges),
     staleTime: Infinity,
   });
 
@@ -55,7 +55,7 @@ export function ReelsViewer({ campaignId, isBrand }: { campaignId: string | null
     if (exhausted || loadingMore) return;
     setLoadingMore(true);
     try {
-      const more = await getSwipeDeck(db, campaignId, PAGE, includeSeen);
+      const more = await getSwipeDeck(db, campaignId, PAGE, includeSeen, badges);
       const known = new Set(cards.map((c) => c.creator.id));
       const fresh = more.filter((c) => !known.has(c.creator.id));
       if (fresh.length) setCards((list) => [...list, ...fresh.filter((c) => !list.some((x) => x.creator.id === c.creator.id))]);
@@ -65,7 +65,7 @@ export function ReelsViewer({ campaignId, isBrand }: { campaignId: string | null
     } finally {
       setLoadingMore(false);
     }
-  }, [db, campaignId, includeSeen, exhausted, loadingMore, cards]);
+  }, [db, campaignId, includeSeen, exhausted, loadingMore, cards, badges]);
 
   const next = useCallback(() => {
     const cur = cards[index];

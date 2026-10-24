@@ -15,6 +15,7 @@ import { Chip } from "@/components/ui/chip";
 import { ErrorState, Skeleton } from "@/components/ui/states";
 import { cn, errorMessage } from "@/lib/utils";
 import { NegotiationCard, StructuredMessage } from "./negotiation";
+import { TrustBadges } from "@/components/verification/trust-badges";
 
 function dayLabel(iso: string) {
   const d = new Date(iso);
@@ -153,6 +154,7 @@ export function Thread({ conversationId }: { conversationId: string }) {
             <span className="min-w-0">
               <span className="block truncate font-semibold">{peer.data.display_name}</span>
               <span className="block truncate text-xs text-ink-3">@{peer.data.username}</span>
+              <TrustBadges badges={peer.data.badges} role={peer.data.role} />
             </span>
             <Chip tone="outline" className="capitalize">{peer.data.role}</Chip>
             {info.data?.campaign && <span className="hidden truncate text-xs text-ink-3 sm:inline">re: {info.data.campaign.title}</span>}

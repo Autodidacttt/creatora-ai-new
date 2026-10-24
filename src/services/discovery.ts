@@ -13,12 +13,15 @@ export interface CreatorFilters {
   availability: string[];
   languages: number[];
   verified: boolean;
+  /** Phone Verified / Identity Verified badges (0026) */
+  phoneVerified: boolean;
+  identityVerified: boolean;
   sort: "best" | "newest" | "followers";
 }
 
 export const EMPTY_FILTERS: CreatorFilters = {
   q: "", skills: [], categories: [], tools: [], contentTypes: [], styles: [],
-  experience: [], availability: [], languages: [], verified: false, sort: "best",
+  experience: [], availability: [], languages: [], verified: false, phoneVerified: false, identityVerified: false, sort: "best",
 };
 
 export type FilterGroup =
@@ -42,6 +45,8 @@ export function filtersFromParams(params: URLSearchParams): CreatorFilters {
     availability: strs(params.get("avail")),
     languages: nums(params.get("langs")),
     verified: params.get("verified") === "1",
+    phoneVerified: params.get("phone") === "1",
+    identityVerified: params.get("idv") === "1",
     sort: sort === "newest" || sort === "followers" ? sort : "best",
   };
 }
@@ -58,6 +63,8 @@ export function filtersToParams(f: CreatorFilters): URLSearchParams {
   if (f.availability.length) p.set("avail", f.availability.join(","));
   if (f.languages.length) p.set("langs", f.languages.join(","));
   if (f.verified) p.set("verified", "1");
+  if (f.phoneVerified) p.set("phone", "1");
+  if (f.identityVerified) p.set("idv", "1");
   if (f.sort !== "best") p.set("sort", f.sort);
   return p;
 }
@@ -66,6 +73,7 @@ export function activeFilterCount(f: CreatorFilters) {
   return (
     f.skills.length + f.categories.length + f.tools.length + f.contentTypes.length + f.styles.length +
     f.experience.length + f.availability.length + f.languages.length + (f.verified ? 1 : 0)
+    + (f.phoneVerified ? 1 : 0) + (f.identityVerified ? 1 : 0)
   );
 }
 
@@ -85,9 +93,11 @@ function rpcArgs(f: CreatorFilters) {
     p_verified_only: f.verified,
   };
 }
+/** Badge filters: search only (the empty-state diagnostics don't break results down by them) */
+const badgeArgs = (f: CreatorFilters) => ({ p_phone_verified: f.phoneVerified, p_identity_verified: f.identityVerified });
 
 export async function searchCreators(db: DB, f: CreatorFilters, page = 0, size = 18): Promise<Page<CreatorCard & { _score: number }>> {
-  const rows = unwrap(await db.rpc("search_creators", { ...rpcArgs(f), p_sort: f.sort, p_limit: size, p_offset: page * size }));
+  const rows = unwrap(await db.rpc("search_creators", { ...rpcArgs(f), ...badgeArgs(f), p_sort: f.sort, p_limit: size, p_offset: page * size }));
   return toPage(rows.map((r) => ({ ...as<CreatorCard>(r.creator), _score: r.score })), rows[0]?.total_count ?? 0, page, size);
 }
 
@@ -99,7 +109,7 @@ export async function searchDiagnostics(db: DB, f: CreatorFilters) {
 
 /** "Related creators": relaxes AND-across-groups to match-any. */
 export async function relatedCreators(db: DB, f: CreatorFilters, size = 6): Promise<CreatorCard[]> {
-  const rows = unwrap(await db.rpc("search_creators", { ...rpcArgs(f), p_match: "any", p_limit: size }));
+  const rows = unwrap(await db.rpc("search_creators", { ...rpcArgs(f), ...badgeArgs(f), p_match: "any", p_limit: size }));
   return rows.map((r) => as<CreatorCard>(r.creator));
 }
 
@@ -111,8 +121,10 @@ export interface DeckCard {
 }
 
 /** Creators the viewer hasn't moved past yet (or everyone, when includeSeen — used by "Reset"). */
-export async function getSwipeDeck(db: DB, campaignId: string | null, size = 15, includeSeen = false): Promise<DeckCard[]> {
-  const rows = unwrap(await db.rpc("get_swipe_deck", { p_campaign_id: campaignId, p_limit: size, p_include_seen: includeSeen }));
+export async function getSwipeDeck(db: DB, campaignId: string | null, size = 15, includeSeen = false,
+  badges: { phone?: boolean; identity?: boolean } = {}): Promise<DeckCard[]> {
+  const rows = unwrap(await db.rpc("get_swipe_deck", { p_campaign_id: campaignId, p_limit: size, p_include_seen: includeSeen,
+    p_phone_verified: !!badges.phone, p_identity_verified: !!badges.identity }));
   return rows.map((r) => ({ creator: as<CreatorCard>(r.creator), score: r.score, reasons: r.reasons ?? [], campaignId: r.campaign_id }));
 }
 

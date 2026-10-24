@@ -36,7 +36,8 @@ export default function OnboardingPage() {
     try {
       await updateProfile(db, { onboarded: true });
       toast.success("You're all set!");
-      router.replace(isCreator ? `/posts/new?welcome=1` : "/campaigns/new?welcome=1");
+      // Brands go straight to their verification flow (they can finish it later from the profile)
+      router.replace(isCreator ? `/posts/new?welcome=1` : "/verification?welcome=1");
       router.refresh();
     } catch (e) {
       toast.error(errorMessage(e));

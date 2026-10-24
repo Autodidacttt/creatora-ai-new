@@ -58,10 +58,9 @@ export const CURRENCIES = ["USD", "EUR", "GBP", "INR", "JPY", "BRL"] as const;
 export const COMPANY_SIZES = ["1-10", "11-50", "51-200", "201-1000", "1000+"] as const;
 
 export const VERIFICATION_TYPES = {
-  tool: { label: "Tool verified", how: "Trust team reviewed project files or account history for this tool" },
-  workflow: { label: "Workflow documented", how: "Trust team reviewed prompt logs, seeds and the edit timeline" },
   past_work: { label: "Past work verified", how: "Confirmed with the brand or via a completed campaign" },
-  identity: { label: "Identity verified", how: "Government ID checked by the trust team" },
+  // legacy manual requests (before the ID verification flow); shown in the admin queue only
+  identity: { label: "Identity (legacy request)", how: "Manual identity request from before ID verification" },
 } as const;
 
 export function labelOf<T extends { value: string; label: string }>(list: readonly T[], value: string | null | undefined) {

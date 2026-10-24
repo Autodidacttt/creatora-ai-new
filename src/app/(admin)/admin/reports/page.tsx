@@ -31,6 +31,7 @@ export default function AdminReports() {
         {q.data?.map((r) => (
           <li key={r.id} className="glass rounded-[1.75rem] p-5">
             <div className="flex flex-wrap items-center gap-2">
+              {r.priority === "high" && <Chip tone="dark">High priority</Chip>}
               <Chip tone="danger" className="capitalize">{r.reason.replace("_", " ")}</Chip>
               <Chip tone="outline" className="capitalize">{r.target_type}</Chip>
               {r.target_removed && <Chip tone="dark">Removed</Chip>}

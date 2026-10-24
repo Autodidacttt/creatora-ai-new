@@ -8,6 +8,7 @@ import { LICENSE_TYPES, labelOf } from "@/config/constants";
 import { Avatar } from "@/components/ui/avatar";
 import { Chip } from "@/components/ui/chip";
 import { cn, daysUntil, money } from "@/lib/utils";
+import { TrustBadges } from "@/components/verification/trust-badges";
 
 export function StatusChip({ status }: { status: Campaign["status"] }) {
   const tone = status === "active" ? "success" : status === "draft" ? "outline" : "dark";
@@ -39,6 +40,7 @@ export function CampaignCard({ campaign, score, reasons, footer, showBrand = tru
             <span className="min-w-0">
               <span className="block truncate text-sm font-semibold">{campaign.brand.display_name}</span>
               {campaign.brand.industry && <span className="block truncate text-xs text-ink-3">{campaign.brand.industry}</span>}
+              <TrustBadges badges={campaign.brand.badges} role="brand" className="mt-0.5" />
             </span>
           </Link>
         ) : (

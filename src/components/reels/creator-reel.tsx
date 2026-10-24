@@ -179,8 +179,8 @@ export function CreatorReel({ card, active, isBrand, onEngage }: {
     }
   }
 
-  const chips = [...c.tools.slice(0, 2).map((t) => ({ key: `t${t.id}`, label: t.name, verified: !!t.verified })),
-                 ...c.skills.slice(0, 1).map((s) => ({ key: `s${s.id}`, label: s.name, verified: false }))];
+  const chips = [...c.tools.slice(0, 2).map((t) => ({ key: `t${t.id}`, label: t.name })),
+                 ...c.skills.slice(0, 1).map((s) => ({ key: `s${s.id}`, label: s.name }))];
   const strip = c.preview[0]?.url;
 
   return (
@@ -204,7 +204,7 @@ export function CreatorReel({ card, active, isBrand, onEngage }: {
           <div className="flex gap-1.5 overflow-hidden">
             {chips.map((ch) => (
               <span key={ch.key} className="inline-flex shrink-0 items-center gap-1 rounded-full bg-white/12 px-2 py-0.5 text-[11px] backdrop-blur">
-                {ch.verified && <BadgeCheck className="size-3" />}{ch.label}
+                {ch.label}
               </span>
             ))}
           </div>

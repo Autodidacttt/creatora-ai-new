@@ -30,7 +30,7 @@ export function CreatorAttributes({ profile }: { profile: FullProfile }) {
         {profile.tools.length === 0 && <span className="text-sm text-ink-3">No tools listed yet</span>}
         {profile.tools.map((t) => (
           <Link key={t.id} href={discover("tools", t.id)}>
-            <Chip tone="glass" icon={t.verified ? <BadgeCheck className="fill-amber text-on-amber" /> : undefined}>
+            <Chip tone="glass">
               {t.name}
               {t.proficiency && <span className="text-ink-3">· {t.proficiency}</span>}
             </Chip>

@@ -6,6 +6,7 @@ import { navFor } from "@/config/nav";
 import { useUnreadCounts } from "@/hooks/use-realtime";
 import { BottomTabs, IconRail } from "./icon-rail";
 import { TopBar } from "./top-bar";
+import { VerificationBanner } from "@/components/verification/verification-banner";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const me = useMe();
@@ -24,6 +25,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <TopBar unreadNotifications={unread.notifications} />
       <IconRail items={items} unreadMessages={unread.messages} createHref={create?.href ?? null} createLabel={create?.label ?? ""} />
       <main id="main" className="mx-auto max-w-7xl px-3 pb-28 pt-5 sm:px-5 lg:pb-12 lg:pl-28">
+        <VerificationBanner />
         {children}
       </main>
       <BottomTabs items={items} unreadMessages={unread.messages} />

@@ -13,6 +13,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { ContactButton, FollowButton } from "@/components/posts/actions";
 import { cn } from "@/lib/utils";
 import { FollowListDialog } from "./follow-list";
+import { TrustBadges } from "@/components/verification/trust-badges";
 
 export function ProfileHeader({ profile, onFollowChange }: { profile: FullProfile; onFollowChange: () => void }) {
   const [list, setList] = useState<"followers" | "following" | null>(null);
@@ -67,6 +68,7 @@ export function ProfileHeader({ profile, onFollowChange }: { profile: FullProfil
               {profile.display_name}
               {profile.is_verified && <VerifiedChip label={profile.role === "brand" ? "Verified brand" : "Verified"} />}
             </h1>
+            <TrustBadges badges={profile.badges} role={profile.role} size="md" className="mt-1" />
             <p className="text-sm text-ink-3">
               @{profile.username}
               {profile.follows_you && <span className="ml-2 rounded-full bg-ink/5 px-2 py-0.5 text-xs">Follows you</span>}

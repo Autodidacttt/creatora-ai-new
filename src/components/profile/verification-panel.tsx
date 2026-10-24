@@ -1,17 +1,21 @@
 import Link from "next/link";
-import { BadgeCheck, Fingerprint, Briefcase, ShieldCheck, Workflow, Wrench } from "lucide-react";
+import { BadgeCheck, Briefcase, IdCard, Phone, ShieldCheck } from "lucide-react";
 import type { FullProfile } from "@/types/app";
 import { VERIFICATION_TYPES } from "@/config/constants";
+import { BADGE_TEXT } from "@/components/verification/trust-badges";
 import { Tooltip } from "@/components/ui/overlay";
 import { cn, timeAgo } from "@/lib/utils";
 
-const ICONS = { tool: Wrench, workflow: Workflow, past_work: Briefcase, identity: Fingerprint };
-
 /** Shows what is verified about a creator and how — the trust signals brands rely on. */
 export function VerificationPanel({ profile }: { profile: FullProfile }) {
-  const approved = profile.verifications.filter((v) => v.status === "approved");
-  const pending = profile.verifications.filter((v) => v.status === "pending");
-  const types = Object.keys(VERIFICATION_TYPES) as (keyof typeof VERIFICATION_TYPES)[];
+  const pastWork = profile.verifications.filter((v) => v.type === "past_work");
+  const approved = pastWork.filter((v) => v.status === "approved");
+  const pending = pastWork.filter((v) => v.status === "pending");
+  const tiles = [
+    { key: "phone", icon: Phone, label: "Phone", on: !!profile.badges?.phone_verified, tip: `${BADGE_TEXT.phone.label}: ${BADGE_TEXT.phone.how}` },
+    { key: "identity", icon: IdCard, label: "Identity", on: !!profile.badges?.identity_verified, tip: `${BADGE_TEXT.identity.label}: ${BADGE_TEXT.identity.how}` },
+    { key: "past", icon: Briefcase, label: "Past work", on: approved.length > 0, count: approved.length, tip: `${VERIFICATION_TYPES.past_work.label}: ${VERIFICATION_TYPES.past_work.how}` },
+  ];
 
   return (
     <section aria-labelledby="trust-h" className="glass rounded-[2rem] p-5">
@@ -26,32 +30,23 @@ export function VerificationPanel({ profile }: { profile: FullProfile }) {
         )}
       </div>
 
-      <div className="mb-4 grid grid-cols-4 gap-2">
-        {types.map((t) => {
-          const Icon = ICONS[t];
-          const count = approved.filter((v) => v.type === t).length;
-          return (
-            <Tooltip key={t} side="top" content={`${VERIFICATION_TYPES[t].label}: ${VERIFICATION_TYPES[t].how}`}>
-              <div
-                tabIndex={0}
-                className={cn(
-                  "flex flex-col items-center gap-1 rounded-2xl px-1 py-2.5 text-center",
-                  count ? "bg-amber-soft text-ink" : "bg-ink/[0.04] text-ink-3",
-                )}
-              >
-                <Icon className="size-4" />
-                <span className="text-[10px] font-medium leading-tight">{VERIFICATION_TYPES[t].label.replace(" verified", "").replace(" documented", "")}</span>
-                <span className="text-[10px] tabular-nums">{count ? `✓ ${count}` : "—"}</span>
-              </div>
-            </Tooltip>
-          );
-        })}
+      <div className="mb-4 grid grid-cols-3 gap-2">
+        {tiles.map((t) => (
+          <Tooltip key={t.key} side="top" content={t.tip}>
+            <div tabIndex={0} className={cn("flex flex-col items-center gap-1 rounded-2xl px-1 py-2.5 text-center",
+              t.on ? "bg-success/10 text-success" : "bg-ink/[0.04] text-ink-3")}>
+              <t.icon className="size-4" />
+              <span className="text-[10px] font-medium leading-tight">{t.label}</span>
+              <span className="text-[10px] tabular-nums">{t.on ? (t.count ? `✓ ${t.count}` : "✓ Verified") : "—"}</span>
+            </div>
+          </Tooltip>
+        ))}
       </div>
 
       {approved.length === 0 ? (
         <p className="text-sm text-ink-2">
-          No verified signals yet.{" "}
-          {profile.is_me && <Link href="/verification" className="font-semibold underline-offset-4 hover:underline">Request verification</Link>}
+          {profile.badges?.phone_verified || profile.badges?.identity_verified ? "No verified past work yet." : "No verified signals yet."}{" "}
+          {profile.is_me && <Link href="/verification" className="font-semibold underline-offset-4 hover:underline">Get verified</Link>}
         </p>
       ) : (
         <ul className="space-y-2.5">
@@ -61,7 +56,7 @@ export function VerificationPanel({ profile }: { profile: FullProfile }) {
               <div className="min-w-0">
                 <p className="font-medium">{v.title}</p>
                 <p className="text-xs text-ink-3">
-                  {VERIFICATION_TYPES[v.type].how}
+                  {VERIFICATION_TYPES.past_work.how}
                   {v.reviewed_at && ` · reviewed ${timeAgo(v.reviewed_at)}`}
                   {v.evidence_url && (
                     <> · <a href={v.evidence_url} target="_blank" rel="noopener noreferrer" className="underline">evidence</a></>

@@ -11,6 +11,7 @@ import { Field, Input } from "@/components/ui/field";
 import { PillCTA } from "@/components/ui/pill-cta";
 import { cn } from "@/lib/utils";
 import { ResendConfirmation } from "@/components/auth/resend-confirmation";
+import { BrandTypePicker } from "@/components/verification/brand-type-picker";
 
 const ROLES = [
   { value: "creator", title: "I'm a creator", body: "Showcase AI work, tools and workflows. Get discovered by brands.", icon: Sparkles },
@@ -20,6 +21,7 @@ const ROLES = [
 export function SignupForm() {
   const router = useRouter();
   const [role, setRole] = useState<"creator" | "brand">("creator");
+  const [brandType, setBrandType] = useState<"individual" | "company" | null>(null);
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,6 +36,10 @@ export function SignupForm() {
       setErrors(Object.fromEntries(parsed.error.issues.map((i) => [String(i.path[0]), i.message])));
       return;
     }
+    if (role === "brand" && !brandType) {
+      setErrors({ brandType: "Choose Individual Recruiter or Company / Organization" });
+      return;
+    }
     setErrors({});
     setLoading(true);
     const { data, error } = await getBrowserClient().auth.signUp({
@@ -41,7 +47,7 @@ export function SignupForm() {
       password: parsed.data.password,
       options: {
         // The DB trigger creates an empty profile with this role (admin can never be self-assigned)
-        data: { role: parsed.data.role, display_name: parsed.data.displayName },
+        data: { role: parsed.data.role, display_name: parsed.data.displayName, ...(role === "brand" ? { brand_type: brandType } : {}) },
         emailRedirectTo: `${window.location.origin}/auth/callback?next=/onboarding`,
       },
     });
@@ -102,7 +108,13 @@ export function SignupForm() {
             })}
           </div>
         </fieldset>
-        <Field label={role === "brand" ? "Brand or agency name" : "Your name"} htmlFor="name" error={errors.displayName}>
+        {role === "brand" && (
+          <div>
+            <BrandTypePicker value={brandType} onChange={setBrandType} />
+            {errors.brandType && <p role="alert" className="mt-1 text-xs text-danger">{errors.brandType}</p>}
+          </div>
+        )}
+        <Field label={role === "brand" ? (brandType === "individual" ? "Your name" : "Brand or agency name") : "Your name"} htmlFor="name" error={errors.displayName}>
           <Input id="name" autoComplete={role === "brand" ? "organization" : "name"} value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
         </Field>
         <Field label="Email" htmlFor="email" error={errors.email}>

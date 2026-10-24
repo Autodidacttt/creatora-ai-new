@@ -4,6 +4,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { BadgeCheck, MapPin } from "lucide-react";
+import { TrustBadges } from "@/components/verification/trust-badges";
 import type { CreatorCard as Creator } from "@/types/app";
 import { AVAILABILITY, EXPERIENCE_LEVELS, labelOf } from "@/config/constants";
 import { Avatar } from "@/components/ui/avatar";
@@ -54,6 +55,7 @@ export function CreatorResultCard({ creator, highlightTools = [], score, scoreLa
           </h3>
           {creator.headline && <p className="line-clamp-1 text-sm text-ink-2">{creator.headline}</p>}
         </Link>
+        <TrustBadges badges={creator.badges} className="relative z-10" />
         <div className="flex flex-wrap items-center gap-1.5 text-xs">
           {avail && <Chip tone="outline"><span className={cn("size-1.5 rounded-full", avail.dot)} />{avail.label}</Chip>}
           {creator.experience_level && <Chip tone="outline">{labelOf(EXPERIENCE_LEVELS, creator.experience_level)}</Chip>}
@@ -61,7 +63,7 @@ export function CreatorResultCard({ creator, highlightTools = [], score, scoreLa
         </div>
         <div className="flex flex-wrap gap-1">
           {tools.slice(0, 5).map((t) => (
-            <Chip key={t.id} tone={highlightTools.includes(t.id) ? "solid" : "neutral"} icon={t.verified ? <BadgeCheck /> : undefined}>{t.name}</Chip>
+            <Chip key={t.id} tone={highlightTools.includes(t.id) ? "solid" : "neutral"}>{t.name}</Chip>
           ))}
           {tools.length > 5 && <Chip tone="outline">+{tools.length - 5}</Chip>}
         </div>

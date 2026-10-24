@@ -1,4 +1,5 @@
 // Shapes of the JSON read models returned by Postgres RPCs (see supabase/migrations/0006_rpcs.sql).
+import type { Badges } from "@/config/verification";
 
 export type Role = "creator" | "brand" | "admin";
 export type AspectRatio = "16:9" | "9:16" | "1:1" | "4:5" | "4:3" | "21:9" | "custom";
@@ -35,6 +36,8 @@ export interface MiniProfile {
   is_verified: boolean;
   headline?: string | null;
   role?: Role;
+  /** Phone / Identity / Company verification + brand type (0026) */
+  badges?: Badges;
 }
 
 export interface CreatorCard {
@@ -54,6 +57,7 @@ export interface CreatorCard {
   skills: Named[];
   categories: Named[];
   verified_count: number;
+  badges?: Badges;
   preview: { id: string; media_type: "image" | "video" | "embed"; url: string | null; title: string; aspect_ratio: AspectRatio }[];
   is_following: boolean;
 }
@@ -164,13 +168,12 @@ export interface RankedCreator {
 
 export interface Verification {
   id: string;
-  type: "tool" | "workflow" | "past_work" | "identity";
+  /** past_work = evidence-based request; identity = legacy manual request (ID verification has its own flow) */
+  type: "past_work" | "identity";
   title: string;
   status: "pending" | "approved" | "rejected";
   evidence_url: string | null;
   evidence_notes: string | null;
-  tool_id: number | null;
-  post_id: string | null;
   experience_id: string | null;
   reviewed_at: string | null;
   created_at: string;
@@ -200,6 +203,7 @@ export interface FullProfile {
   links: Record<string, string>;
   is_verified: boolean;
   is_suspended: boolean;
+  badges?: Badges;
   onboarded: boolean;
   created_at: string;
   stats: { followers: number; following: number; posts: number; likes: number };

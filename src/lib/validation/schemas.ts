@@ -167,19 +167,13 @@ export const applicationSchema = z.object({
 
 export const messageSchema = z.object({ body: z.string().trim().min(1).max(4000) });
 
-export const verificationRequestSchema = z
-  .object({
-    type: z.enum(["tool", "workflow", "past_work", "identity"]),
-    tool_id: z.number().int().nullable().optional(),
-    post_id: z.string().uuid().nullable().optional(),
-    experience_id: z.string().uuid().nullable().optional(),
-    title: z.string().trim().min(3).max(160),
-    evidence_url: optionalUrl,
-    evidence_notes: optionalText(2000),
-  })
-  .refine((v) => v.type !== "tool" || v.tool_id, { message: "Choose a tool", path: ["tool_id"] })
-  .refine((v) => v.type !== "workflow" || v.post_id, { message: "Choose a portfolio piece", path: ["post_id"] })
-  .refine((v) => v.type !== "past_work" || v.experience_id, { message: "Choose a past project", path: ["experience_id"] });
+/** Past work is the remaining evidence-based request (phone / ID / company verification have their own flows) */
+export const verificationRequestSchema = z.object({
+  experience_id: z.string().uuid({ message: "Choose a past project" }),
+  title: z.string().trim().min(3).max(160),
+  evidence_url: optionalUrl,
+  evidence_notes: optionalText(2000),
+});
 
 export const reportSchema = z.object({
   target_type: z.enum(["profile", "post", "comment", "campaign", "message"]),

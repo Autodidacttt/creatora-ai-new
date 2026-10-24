@@ -60,6 +60,18 @@ export function EmptyResults({ filters, lookups, onChange }: {
               </Button>
             </li>
           ))}
+          {([
+            { key: "phone", on: filters.phoneVerified, label: "Phone verified", clear: { phoneVerified: false } },
+            { key: "idv", on: filters.identityVerified, label: "Identity verified", clear: { identityVerified: false } },
+          ] satisfies { key: string; on: boolean; label: string; clear: Partial<CreatorFilters> }[])
+            .filter((b) => b.on)
+            .map((b) => (
+              <li key={b.key} className="flex flex-wrap items-center gap-3 rounded-2xl bg-card px-4 py-3">
+                <span className="min-w-0 flex-1 text-sm"><span className="font-semibold">Badge filter:</span> {b.label}
+                  <span className="block text-xs text-ink-3">Only creators with this badge are shown</span></span>
+                <Button size="sm" variant="primary" onClick={() => onChange(b.clear)}><X /> Remove</Button>
+              </li>
+            ))}
         </ul>
         <div className="mt-5 flex flex-wrap gap-2">
           <Button variant="dark" onClick={() => onChange({ ...EMPTY_FILTERS, sort: filters.sort })}>Clear all filters</Button>

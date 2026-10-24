@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, BadgeCheck, Flag, MoreHorizontal, Pencil, Send, ShieldCheck, Trash2, Workflow } from "lucide-react";
+import { ArrowRight, BadgeCheck, Flag, MoreHorizontal, Pencil, Send, Trash2, Workflow } from "lucide-react";
 import { toast } from "sonner";
 import type { PostCard } from "@/types/app";
 import { useDb, useMe } from "@/features/session";
@@ -104,7 +104,6 @@ export function PostDetail({ post, onDeleted }: { post: PostCard; onDeleted?: ()
           <section aria-labelledby="wf-h">
             <h2 id="wf-h" className="eyebrow mb-2 flex items-center gap-1.5">
               <Workflow className="size-3.5" /> Workflow
-              {post.workflow_verified && <Chip tone="amber" icon={<ShieldCheck />} className="ml-1 normal-case tracking-normal">Documented & verified</Chip>}
             </h2>
             <ol className="flex flex-wrap items-center gap-1.5">
               {post.workflow_steps.map((s, i) => (

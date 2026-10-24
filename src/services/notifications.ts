@@ -46,6 +46,7 @@ export function notificationHref(n: NotificationItem, role: string): string {
     case "message":
       return n.entity_id ? `/inbox/${n.entity_id}` : "/inbox";
     case "verification":
+      if (role === "admin" && n.entity_id && /^(company_|invitation_)/.test(String(n.data?.event))) return `/admin/verifications/company/${n.entity_id}`;
       return "/verification";
     case "project":
     case "payment": {
@@ -98,6 +99,18 @@ const PROPOSAL_TEXT: Record<string, (who: string, t: string, d: NotificationItem
   proposal_rejected: (who, t, d) => `${who} declined proposal v${d.version ?? 1} for “${t}”`,
   hired_confirmed: (_who, t, d) => `Hire confirmed for “${t}”${d.amount_label ? ` · ${d.amount_label}` : ""}`,
 };
+const VERIFICATION_TEXT: Record<string, (d: NotificationItem["data"]) => string> = {
+  phone_verified: () => "Your phone number is verified ✓",
+  identity_pending: () => "Your ID verification was submitted — the trust team will review it",
+  identity_verified: () => "Your identity is verified ✓ — the Identity Verified badge is on your profile",
+  identity_rejected: (d) => `Your ID verification wasn't approved${d.reason ? `: ${d.reason}` : ""}`,
+  company_pending: () => "Company Verification Pending — we're confirming with an official company contact",
+  company_verified: (d) => `${d.company_name ?? "Your company"} is a Verified Company ✓ — you can publish briefs and hire`,
+  company_rejected: () => "Verification rejected. If you think this is a mistake, contact support.",
+  company_impersonation: (d) => `Potential impersonation: the contact for ${d.company_name ?? "a company"} did not confirm the applicant (high-priority report opened)`,
+  invitation_demo: (d) => `Company invitation for ${d.company_name ?? "a company"} created — Demo, email not sent`,
+};
+
 const TASK_TEXT: Record<string, (who: string, t: string, d: NotificationItem["data"]) => string> = {
   task_assigned: (who, t, d) => `${who} assigned ${d.scope === "group" ? "a group task" : "you a task"} on “${t}”: ${d.title ?? ""}`,
   task_todo: (who, t, d) => `${who} moved “${d.title ?? "a task"}” back to to-do on “${t}”`,
@@ -119,7 +132,11 @@ export function notificationText(n: NotificationItem): string {
       const count = Number(d.count ?? 1);
       return count > 1 ? `${who} sent you ${count} messages` : `${who}: ${d.excerpt ?? "sent you a message"}`;
     }
-    case "verification": return `Your verification “${d.title ?? ""}” was ${d.status === "approved" ? "approved ✓" : "not approved"}`;
+    case "verification": {
+      const text = VERIFICATION_TEXT[String(d.event)];
+      if (text) return text(d);
+      return `Your verification “${d.title ?? ""}” was ${d.status === "approved" ? "approved ✓" : "not approved"}`;
+    }
     case "project": {
       const fn = PROJECT_TEXT[String(d.event)];
       return fn ? fn(who, String(d.campaign_title ?? "a project"), d) : `Update on “${d.campaign_title ?? "a project"}”`;

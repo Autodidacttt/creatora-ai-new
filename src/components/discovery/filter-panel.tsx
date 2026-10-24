@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { BadgeCheck, SlidersHorizontal, X } from "lucide-react";
+import { BadgeCheck, IdCard, Phone, SlidersHorizontal, X } from "lucide-react";
 import type { Lookups } from "@/types/app";
 import { activeFilterCount, EMPTY_FILTERS, type CreatorFilters } from "@/services/discovery";
 import { AVAILABILITY, EXPERIENCE_LEVELS } from "@/config/constants";
@@ -27,17 +27,23 @@ function useGroups(l: Lookups, f: CreatorFilters, set: Patch) {
   ];
 }
 
+function Toggle({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button type="button" onClick={onClick} aria-pressed={on}
+      className={cn("inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors",
+        on ? "border-amber bg-amber text-on-amber" : "border-line bg-card hover:border-ink/25")}>
+      {children}
+    </button>
+  );
+}
+
 function VerifiedToggle({ f, set }: { f: CreatorFilters; set: Patch }) {
   return (
-    <button
-      type="button"
-      onClick={() => set({ verified: !f.verified })}
-      aria-pressed={f.verified}
-      className={cn("inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors",
-        f.verified ? "border-amber bg-amber text-on-amber" : "border-line bg-card hover:border-ink/25")}
-    >
-      <BadgeCheck className="size-3.5" /> Verified only
-    </button>
+    <>
+      <Toggle on={f.verified} onClick={() => set({ verified: !f.verified })}><BadgeCheck className="size-3.5" /> Verified only</Toggle>
+      <Toggle on={f.phoneVerified} onClick={() => set({ phoneVerified: !f.phoneVerified })}><Phone className="size-3.5" /> Phone verified</Toggle>
+      <Toggle on={f.identityVerified} onClick={() => set({ identityVerified: !f.identityVerified })}><IdCard className="size-3.5" /> Identity verified</Toggle>
+    </>
   );
 }
 
@@ -59,7 +65,7 @@ export function FilterPanel({ lookups, filters, onChange }: { lookups: Lookups; 
           </button>
         )}
       </div>
-      <div className="flex items-center gap-2 md:hidden">
+      <div className="flex flex-wrap items-center gap-2 md:hidden">
         <Button size="sm" onClick={() => setOpen(true)}>
           <SlidersHorizontal /> Filters {count > 0 && <span className="rounded-full bg-amber px-1.5 text-[10px] text-on-amber">{count}</span>}
         </Button>
