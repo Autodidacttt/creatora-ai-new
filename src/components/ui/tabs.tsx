@@ -3,6 +3,7 @@
 import { motion } from "motion/react";
 import { useId } from "react";
 import { cn } from "@/lib/utils";
+import { SPRING } from "@/lib/motion";
 
 /** Segmented pill tabs with a sliding amber indicator. Controlled; works with URL state. */
 export function SegmentedTabs<T extends string>({ value, onChange, items, className, size = "md" }: {
@@ -34,7 +35,7 @@ export function SegmentedTabs<T extends string>({ value, onChange, items, classN
               <motion.span
                 layoutId={`tab-${id}`}
                 className="absolute inset-0 rounded-full bg-amber shadow-[0_0_16px_-4px_var(--glow)]"
-                transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                transition={SPRING.glide}
               />
             )}
             <span className="relative flex items-center gap-1.5">

@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { Switch as S } from "radix-ui";
 import { cn } from "@/lib/utils";
-import { AstralLoader } from "@/components/astral/ornaments";
+import { ConstellationLoader } from "@/components/cosmic/ornaments";
 
 /** Calls onVisible when scrolled near the bottom — drives infinite scroll. */
 export function InfiniteSentinel({ onVisible, disabled, loading }: { onVisible: () => void; disabled?: boolean; loading?: boolean }) {
@@ -19,7 +19,7 @@ export function InfiniteSentinel({ onVisible, disabled, loading }: { onVisible: 
   }, [disabled]);
   return (
     <div ref={ref} className="flex h-16 items-center justify-center">
-      {loading && <AstralLoader className="size-10" label="Loading more" />}
+      {loading && <ConstellationLoader className="size-10" label="Loading more" />}
     </div>
   );
 }

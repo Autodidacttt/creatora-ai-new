@@ -23,8 +23,8 @@ export function PillCTA({ children, href, onClick, className, size = "md", loadi
     "group relative inline-flex items-center justify-between gap-4 overflow-hidden rounded-full font-medium transition-all duration-300",
     "hover:-translate-y-0.5 hover:shadow-lift disabled:pointer-events-none disabled:opacity-60",
     tone === "light"
-      ? "bg-card text-ink shadow-soft dark:bg-[#f2f1fb] dark:text-[#12142a] dark:hover:shadow-[0_14px_44px_-14px_var(--glow)]"
-      : "bg-ink text-bg shadow-soft dark:border dark:border-glass-border dark:bg-glass-strong dark:text-ink dark:backdrop-blur-xl",
+      ? "bg-ink text-on-amber shadow-soft hover:shadow-[0_14px_44px_-14px_var(--glow)]"
+      : "glass-strong text-ink",
     size === "lg" ? "h-16 pl-8 pr-2 text-lg" : "h-12 pl-5 pr-1.5 text-sm",
     className,
   );

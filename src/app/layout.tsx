@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { Providers } from "@/components/providers";
-import { Atmosphere } from "@/components/astral/atmosphere";
-import { EFFECTS_SCRIPT } from "@/components/astral/effects";
+import { Atmosphere } from "@/components/cosmic/atmosphere";
+import { EFFECTS_SCRIPT } from "@/components/cosmic/effects";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
@@ -14,10 +14,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f6f4ef" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0c1b" },
-  ],
+  themeColor: "#12100d",
+  colorScheme: "dark",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

@@ -1,78 +1,63 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:where(.dark, .dark *));
-
 /* ---------------------------------------------------------------------------
-   Design tokens — "astral": night-sky inks, hairline starlight, one amber star glow.
-   Light mode is the quiet paper-and-ink version of the same language.
+   Design tokens — "cosmic": one dark theme. Warm near-black ink, warm starlight text, hairline glass, a single
+   amber star, and very faint nebula tints (indigo / violet / teal). There is no light theme.
    --------------------------------------------------------------------------- */
 :root {
-  --bg: #f6f4ef;
-  --bg-2: #eeedf5;
-  --ink: #16182e;
-  --ink-2: #4a4e6b;
-  --ink-3: #666a86;
-  --amber: #ffc02e;
-  --amber-2: #f5a800;
-  --amber-soft: #fff1cc;
-  /* Amber for text/icons: AA on paper (4.6:1); full amber at night */
-  --amber-ink: #9a6200;
-  --on-amber: #1a1408;
-  --glass: rgba(255, 255, 255, 0.62);
-  --glass-strong: rgba(255, 255, 255, 0.86);
-  --glass-border: rgba(22, 24, 46, 0.09);
-  --glass-hi: rgba(255, 255, 255, 0.9);
-  --card: #ffffff;
-  --line: rgba(22, 24, 46, 0.1);
-  --shadow-soft: 0 18px 44px -18px rgba(22, 24, 46, 0.16);
-  --shadow-lift: 0 30px 70px -24px rgba(22, 24, 46, 0.26);
-  /* Sky: nebula washes and the RGB triplets the canvas effects read */
-  --nebula-1: rgba(120, 104, 214, 0.1);
-  --nebula-2: rgba(84, 134, 214, 0.08);
-  --nebula-3: rgba(255, 192, 46, 0.08);
-  --star-rgb: 30, 33, 66;
-  --glow-rgb: 214, 146, 0;
-  --glow: rgba(245, 168, 0, 0.35);
-  --success: #15803d;
-  --danger: #c2410c;
-  /* Chart palette — validated (dataviz validate_palette.js): light surface, all-pairs CVD/normal-vision pass */
-  --chart-1: #e09600;
-  --chart-2: #2a78d6;
-  --chart-3: #1baf7a;
-  --chart-glow: 0 0 0 transparent;
-  color-scheme: light;
-}
+  color-scheme: dark;
 
-.dark {
-  --bg: #0a0c1b;
-  --bg-2: #10132b;
-  --ink: #eef0fb;
-  --ink-2: #b4b9d6;
-  --ink-3: #8f95b9;
-  --amber-soft: rgba(255, 192, 46, 0.13);
-  --amber-ink: #ffc02e;
-  --glass: rgba(20, 24, 52, 0.55);
-  --glass-strong: rgba(23, 27, 58, 0.9);
-  --glass-border: rgba(170, 180, 255, 0.13);
-  --glass-hi: rgba(200, 210, 255, 0.07);
-  --card: #141834;
-  --line: rgba(170, 180, 255, 0.1);
-  --shadow-soft: 0 20px 50px -16px rgba(2, 3, 12, 0.7);
-  --shadow-lift: 0 32px 80px -24px rgba(2, 3, 12, 0.85);
-  --nebula-1: rgba(112, 82, 230, 0.2);
-  --nebula-2: rgba(46, 110, 220, 0.15);
-  --nebula-3: rgba(255, 176, 46, 0.07);
-  --star-rgb: 226, 230, 255;
-  --glow-rgb: 255, 192, 46;
-  --glow: rgba(255, 192, 46, 0.45);
+  /* Surfaces */
+  --bg: #12100d;
+  --bg-2: #17140f;
+  --card: #1d1914;
+  --line: rgba(255, 226, 170, 0.09);
+
+  /* Text — AA on every surface, incl. glass over stars (ink-3 ≥ 5.4:1) */
+  --ink: #f4efe6;
+  --ink-2: #c8bfb1;
+  --ink-3: #a39885;
+
+  /* The star */
+  --amber: #fdb828;
+  --amber-2: #e9a514;
+  --amber-soft: rgba(253, 184, 40, 0.13);
+  --amber-ink: #fdb828;
+  --on-amber: #1a1408;
+  --glow-rgb: 253, 184, 40;
+  --glow: rgba(253, 184, 40, 0.4);
+
+  /* Glass material */
+  --glass: rgba(255, 244, 220, 0.055);
+  --glass-strong: rgba(31, 27, 21, 0.88);
+  --glass-fallback: rgba(29, 25, 20, 0.97);
+  --glass-border: rgba(255, 220, 150, 0.14);
+  --glass-border-hi: rgba(255, 234, 196, 0.26);
+  --glass-hi: rgba(255, 240, 210, 0.07);
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .96 0 0 0 0 .88 0 0 0 .045 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --shadow-soft: 0 20px 50px -18px rgba(0, 0, 0, 0.6);
+  --shadow-lift: 0 32px 80px -24px rgba(0, 0, 0, 0.75);
+
+  /* Sky: faint nebula tints and the RGB triplets the canvas effects read */
+  --nebula-1: rgba(72, 60, 160, 0.13);
+  --nebula-2: rgba(118, 64, 150, 0.08);
+  --nebula-3: rgba(40, 128, 130, 0.06);
+  --star-rgb: 244, 240, 232;
+
   --success: #4ade80;
   --danger: #fb923c;
-  /* Re-validated against the indigo card surface #141834 (dark, all pairs) */
+
+  /* Chart palette — validated (dataviz validate_palette.js) on #1d1914 and #12100d, all pairs */
   --chart-1: #c98500;
   --chart-2: #3987e5;
   --chart-3: #199e70;
-  --chart-glow: 0 0 5px rgba(200, 210, 255, 0.28);
-  color-scheme: dark;
+  --chart-glow: 0 0 5px rgba(253, 184, 40, 0.22);
+
+  /* Motion — CSS mirror of src/lib/motion.ts (springs generated from the same stiffness/damping/mass) */
+  --dur-open: 420ms;
+  --spring-open: linear(0, 0.0259, 0.0916, 0.1819, 0.2848, 0.3916, 0.4959, 0.5933, 0.6811, 0.7579, 0.8234, 0.8777, 0.9216, 0.956, 0.9822, 1.0013, 1.0146, 1.0232, 1.028, 1.03, 1.0299, 1.0284, 1.026, 1.023, 1.0198, 1.0166, 1.0136, 1.0108, 1.0083, 1.0062, 1, 1);
+  --spring-glide: linear(0, 0.0448, 0.1493, 0.2799, 0.4149, 0.5413, 0.6524, 0.7455, 0.8204, 0.8786, 0.9224, 0.9542, 0.9764, 0.9913, 1.0006, 1.006, 1.0086, 1.0094, 1.0091, 1.0082, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @theme inline {
@@ -126,6 +111,12 @@
   from { stroke-dashoffset: 1; }
   to { stroke-dashoffset: 0; }
 }
+@keyframes scroll-hint {
+  0% { transform: scaleY(0); transform-origin: top; }
+  50% { transform: scaleY(1); transform-origin: top; }
+  51% { transform-origin: bottom; }
+  100% { transform: scaleY(0); transform-origin: bottom; }
+}
 
 /* Only <html> paints the base colour: a body background would cover the fixed -z-10 sky (Atmosphere). */
 html {
@@ -137,7 +128,6 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100dvh;
-  font-feature-settings: "cv11", "ss01";
 }
 
 ::selection { background: var(--amber); color: var(--on-amber); }
@@ -150,23 +140,42 @@ body {
   box-shadow: 0 0 0 5px rgba(var(--glow-rgb), 0.18);
 }
 
-/* Quiet scrollbars that match the sky */
-* { scrollbar-color: color-mix(in srgb, var(--ink-3) 45%, transparent) transparent; scrollbar-width: thin; }
+/* Quiet scrollbars */
+* { scrollbar-color: rgba(163, 152, 133, 0.4) transparent; scrollbar-width: thin; }
 
 @layer components {
-  .glass {
-    background: var(--glass);
+  /* Glass material — cards and panels: warm translucent fill, grain, hairline (brighter on top), inner highlight */
+  .glass,
+  .glass-strong {
+    background-color: var(--glass);
+    background-image: var(--grain);
     border: 1px solid var(--glass-border);
-    backdrop-filter: blur(22px) saturate(1.3);
-    -webkit-backdrop-filter: blur(22px) saturate(1.3);
+    border-top-color: var(--glass-border-hi);
+    backdrop-filter: blur(20px) saturate(1.5);
+    -webkit-backdrop-filter: blur(20px) saturate(1.5);
     box-shadow: inset 0 1px 0 var(--glass-hi), var(--shadow-soft);
   }
   .glass-strong {
-    background: var(--glass-strong);
-    border: 1px solid var(--glass-border);
-    backdrop-filter: blur(26px) saturate(1.4);
-    -webkit-backdrop-filter: blur(26px) saturate(1.4);
-    box-shadow: inset 0 1px 0 var(--glass-hi), var(--shadow-soft);
+    background-color: var(--glass-strong);
+    backdrop-filter: blur(26px) saturate(1.6);
+    -webkit-backdrop-filter: blur(26px) saturate(1.6);
+  }
+  /* Premium surfaces (nav rail, bars, menus, dialogs): adds a gradient hairline ring. Uses ::before only. */
+  .glass-surface {
+    position: relative;
+    border-color: transparent;
+  }
+  .glass-surface::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(170deg, rgba(255, 238, 205, 0.34), rgba(255, 220, 150, 0.1) 35%, rgba(255, 220, 150, 0.05) 70%, rgba(var(--glow-rgb), 0.22));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
   }
   .display {
     font-family: var(--font-inter), ui-sans-serif, sans-serif;
@@ -183,21 +192,27 @@ body {
   /* Amber "star glow" text accent */
   .star-text {
     color: var(--amber-ink);
+    text-shadow: 0 0 28px rgba(var(--glow-rgb), 0.3);
   }
-  .dark .star-text {
-    text-shadow: 0 0 28px rgba(var(--glow-rgb), 0.35);
-  }
-  /* Small hover glow for interactive cards: a hairline that lights up, nothing moves */
+  /* Small hover glow for interactive cards: the hairline lights up, nothing moves */
   .glow-hover {
     transition: box-shadow 0.3s ease, border-color 0.3s ease;
   }
   .glow-hover:hover {
-    border-color: rgba(var(--glow-rgb), 0.35);
-    box-shadow: inset 0 1px 0 var(--glass-hi), 0 0 0 1px rgba(var(--glow-rgb), 0.12), 0 18px 50px -20px rgba(var(--glow-rgb), 0.35);
+    border-color: rgba(var(--glow-rgb), 0.32);
+    box-shadow: inset 0 1px 0 var(--glass-hi), 0 0 0 1px rgba(var(--glow-rgb), 0.1), 0 18px 50px -20px rgba(var(--glow-rgb), 0.3);
+  }
+  /* Haptic-feel press: a quick spring-back scale on anything tappable that opts in */
+  .press {
+    transition: scale 0.32s var(--spring-glide), transform 0.32s var(--spring-glide);
+  }
+  .press:active {
+    scale: 0.92;
+    transition-duration: 0.08s;
   }
   /* Shimmering skeleton */
   .shimmer {
-    background-image: linear-gradient(100deg, transparent 20%, color-mix(in srgb, var(--ink) 7%, transparent) 50%, transparent 80%);
+    background-image: linear-gradient(100deg, transparent 20%, rgba(255, 240, 210, 0.07) 50%, transparent 80%);
     background-size: 200% 100%;
     animation: var(--animate-shimmer);
   }
@@ -210,13 +225,63 @@ body {
   .scrollbar-none::-webkit-scrollbar { display: none; }
 }
 
-/* Charts: a restrained glow on series lines (dark only via --chart-glow) */
+/* No backdrop-filter (older browsers, some low-power modes): opaque warm glass so text never sits on raw stars */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass, .glass-strong { background-color: var(--glass-fallback); }
+}
+
+/* Charts: a restrained glow on series lines */
 .recharts-area-curve,
 .recharts-line-curve {
   filter: drop-shadow(var(--chart-glow));
 }
 
-/* Effects preference (Settings → Appearance), set on <html data-effects> before first paint.
+/* ---------------------------------------------------------------------------
+   App-open: a page grows out of the pressed icon/card. View Transitions where supported (React <ViewTransition
+   enter="app-open">), a Framer spring otherwise. --open-* are set at click time (src/components/cosmic/app-open.tsx).
+   --------------------------------------------------------------------------- */
+::view-transition-new(.app-open) {
+  animation: app-open var(--dur-open) var(--spring-open) both;
+  transform-origin: var(--open-x, 50%) var(--open-y, 0px);
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 180ms;
+}
+@keyframes app-open {
+  from {
+    opacity: 0;
+    transform: scale(var(--open-scale, 0.96));
+    filter: blur(10px);
+    clip-path: inset(var(--open-clip, 0px 0px 0px 0px) round 28px);
+  }
+  45% { opacity: 1; }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+    clip-path: inset(0px 0px 0px 0px round 0px);
+  }
+}
+
+/* Dialogs: grow from the pressed element on larger screens; rise as a sheet on phones (overlay.tsx) */
+@keyframes sheet-pop {
+  from { opacity: 0; scale: 0.86; filter: blur(8px); }
+}
+@keyframes sheet-up {
+  from { translate: 0 100%; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+}
+.sheet[data-state="open"] { animation: sheet-pop var(--dur-open) var(--spring-open); }
+@media (max-width: 639px) {
+  .sheet[data-state="open"] { animation: sheet-up var(--dur-open) var(--spring-open); }
+}
+.pop[data-state="open"] { animation: sheet-pop 0.28s var(--ease-out); }
+.fade[data-state="open"] { animation: fade-in 0.25s ease-out; }
+
+/* Effects preference (Settings → Effects), set on <html data-effects> before first paint.
    "off" removes decorative motion everywhere; essential UI transitions stay. */
 html[data-effects="off"] .fx-motion,
 html[data-effects="reduced"] .fx-motion {
@@ -227,6 +292,9 @@ html[data-effects="reduced"] .fx-only-full,
 html[data-effects="off"] .fx-decor {
   display: none !important;
 }
+html:not([data-effects="full"])::view-transition-new(.app-open) {
+  animation: fade-in 0.15s ease-out both;
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -236,35 +304,4 @@ html[data-effects="off"] .fx-decor {
     scroll-behavior: auto !important;
   }
   .fx-only-full { display: none !important; }
-}
-
-/* Overlay entrances: soft depth (scale + blur + fade). Uses the `scale` property so Tailwind's `translate` centring is untouched. */
-@keyframes astral-pop {
-  from { opacity: 0; scale: 0.97; filter: blur(6px); }
-}
-@keyframes astral-fade {
-  from { opacity: 0; }
-}
-.astral-pop[data-state="open"] { animation: astral-pop 0.28s cubic-bezier(0.16, 1, 0.3, 1); }
-.astral-fade[data-state="open"] { animation: astral-fade 0.25s ease-out; }
-@keyframes scroll-hint {
-  0% { transform: scaleY(0); transform-origin: top; }
-  50% { transform: scaleY(1); transform-origin: top; }
-  51% { transform-origin: bottom; }
-  100% { transform: scaleY(0); transform-origin: bottom; }
-}
-
-/* Landing: pinned scroll sequences only on large screens with full effects; otherwise the stacked version.
-   Keyed on data-effects (set before first paint), so there is no swap after hydration. */
-.fx-pin { display: none; }
-@media (min-width: 1024px) {
-  html[data-effects="full"] .fx-pin { display: block; }
-  html[data-effects="full"] .fx-stack { display: none; }
-}
-@keyframes float-y {
-  to { transform: translateY(-6px); }
-}
-@keyframes travel {
-  from { offset-distance: 0%; }
-  to { offset-distance: 100%; }
 }

@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useTheme } from "next-themes";
-import { Bookmark, LogOut, Moon, Search, Settings, ShieldCheck, Sparkles, Sun, User, LayoutDashboard } from "lucide-react";
+import { Bookmark, LogOut, Search, Settings, ShieldCheck, Sparkles, User, LayoutDashboard } from "lucide-react";
 import { useDb, useMe } from "@/features/session";
 import { Avatar } from "@/components/ui/avatar";
 import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/components/ui/overlay";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { cn } from "@/lib/utils";
+import { useScrolled } from "@/components/cosmic/use-scrolled";
 
 export function Wordmark({ className }: { className?: string }) {
   return (
@@ -26,7 +26,7 @@ export function TopBar({ unreadNotifications }: { unreadNotifications: number })
   const me = useMe();
   const db = useDb();
   const router = useRouter();
-  const { resolvedTheme, setTheme } = useTheme();
+  const scrolled = useScrolled();
   const [q, setQ] = useState("");
   const [focused, setFocused] = useState(false);
   const firstName = me.display_name.split(" ")[0];
@@ -38,8 +38,14 @@ export function TopBar({ unreadNotifications }: { unreadNotifications: number })
   }
 
   return (
-    <header className="sticky top-0 z-30 bg-bg/65 px-3 pt-3 backdrop-blur-xl sm:px-5 lg:pl-28">
-      <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-line to-transparent" />
+    // Scroll-linked: transparent over the sky at the top, glass (blur, grain, hairline) once content passes under it
+    <header
+      className={cn(
+        "sticky top-0 z-30 px-3 pb-2 pt-3 transition-[background-color,backdrop-filter,box-shadow] duration-500 sm:px-5 lg:pl-28",
+        scrolled ? "bg-bg/60 bg-[image:var(--grain)] shadow-[0_12px_30px_-20px_rgba(0,0,0,0.8)] backdrop-blur-xl backdrop-saturate-150" : "bg-transparent",
+      )}
+    >
+      <span aria-hidden className={cn("pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[var(--glass-border-hi)] to-transparent transition-opacity duration-500", scrolled ? "opacity-100" : "opacity-0")} />
       <div className="mx-auto flex max-w-7xl items-center gap-2 sm:gap-3">
         <Link href="/home" className="mr-auto shrink-0 rounded-full focus-visible:outline-offset-4" aria-label="Creatora home">
           <Wordmark />
@@ -97,10 +103,7 @@ export function TopBar({ unreadNotifications }: { unreadNotifications: number })
             {me.role === "admin" && (
               <MenuItem onSelect={() => router.push("/admin")}><LayoutDashboard /> Admin dashboard</MenuItem>
             )}
-            <MenuItem onSelect={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}>
-              {resolvedTheme === "dark" ? <Sun /> : <Moon />} {resolvedTheme === "dark" ? "Light mode" : "Dark mode"}
-            </MenuItem>
-            <MenuItem onSelect={() => router.push("/settings/profile#appearance")}><Sparkles /> Appearance &amp; effects</MenuItem>
+            <MenuItem onSelect={() => router.push("/settings/profile#effects")}><Sparkles /> Effects</MenuItem>
             <MenuSeparator />
             <MenuItem onSelect={signOut} danger><LogOut /> Sign out</MenuItem>
           </MenuContent>

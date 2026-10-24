@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { cn, errorMessage } from "@/lib/utils";
 import { Button } from "./button";
-import { ConstellationMark } from "@/components/astral/ornaments";
+import { ConstellationMark } from "@/components/cosmic/ornaments";
 
 export function Skeleton({ className }: { className?: string }) {
   return <div aria-hidden className={cn("shimmer fx-motion rounded-2xl bg-ink/[0.06]", className)} />;

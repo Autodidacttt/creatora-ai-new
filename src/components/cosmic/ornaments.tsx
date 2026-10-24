@@ -1,15 +1,18 @@
 import { cn } from "@/lib/utils";
 
-/** Hairline rings, two tilted orbits and a few "planets" — faint line-art for backdrops. Slowly rotates (CSS, effects-aware). */
-export function OrbitLines({ className }: { className?: string }) {
+/**
+ * Hairline rings, two tilted orbits and a few "planets" — faint line-art for backdrops. Slowly rotates (CSS,
+ * effects-aware) unless `still` — keep it still behind glass panels, where every frame would re-blur them.
+ */
+export function OrbitLines({ className, still }: { className?: string; still?: boolean }) {
   return (
     <svg viewBox="-220 -220 440 440" className={className} fill="none" stroke="currentColor" strokeWidth="0.7" aria-hidden>
       {[60, 110, 160, 210].map((r) => <circle key={r} r={r} strokeDasharray={r === 110 ? "2 6" : undefined} />)}
-      <g className="fx-motion origin-center animate-orbit">
+      <g className={still ? undefined : "fx-motion origin-center animate-orbit"}>
         <ellipse rx="200" ry="70" transform="rotate(-24)" />
         <circle cx="182" cy="-80" r="3.5" fill="currentColor" />
       </g>
-      <g className="fx-motion origin-center animate-orbit-rev">
+      <g className={still ? undefined : "fx-motion origin-center animate-orbit-rev"}>
         <ellipse rx="150" ry="46" transform="rotate(32)" />
         <circle cx="-122" cy="-66" r="2.5" fill="currentColor" />
       </g>
@@ -39,7 +42,7 @@ export function ConstellationMark({ className }: { className?: string }) {
  * Constellation loader: five stars whose connecting lines draw in turn. Replaces generic spinners for
  * page/section loading (inline button spinners stay as they are). With effects off it renders statically.
  */
-export function AstralLoader({ className, label = "Loading" }: { className?: string; label?: string }) {
+export function ConstellationLoader({ className, label = "Loading" }: { className?: string; label?: string }) {
   const pts: [number, number][] = [[6, 26], [16, 8], [28, 20], [40, 6], [44, 28]];
   return (
     <span role="status" aria-label={label} className={cn("inline-grid size-12 place-items-center text-ink-3", className)}>
