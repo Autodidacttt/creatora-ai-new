@@ -75,7 +75,7 @@ export interface SubmissionFile {
   file_name: string | null;
   mime_type: string | null;
   size_bytes: number | null;
-  storage_path: string | null;
+  // (the clean original's storage path is server-only; download via /api/submissions/:id/files/:fileId/original)
   preview_path: string | null;
   thumbnail_path: string | null;
   frame_paths: string[];

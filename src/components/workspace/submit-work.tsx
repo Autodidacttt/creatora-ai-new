@@ -153,7 +153,7 @@ export function SubmitWork({ project, draft, onChanged, onSubmitted }: {
     <section className="glass space-y-5 rounded-[1.75rem] p-5 sm:p-6" aria-labelledby="submit-h">
       <div>
         <h2 id="submit-h" className="display text-xl">{version > 1 ? `Submit version ${version}` : "Submit your work"}</h2>
-        <p className="mt-1 text-xs text-ink-2">Originals stay private. The brand only sees watermarked previews until they approve the work and fund escrow.</p>
+        <p className="mt-1 text-xs text-ink-2">Originals stay private. The brand only sees watermarked previews until they approve the work and release the payment.</p>
       </div>
 
       <div

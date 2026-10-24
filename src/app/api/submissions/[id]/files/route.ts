@@ -64,9 +64,11 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
   const draft = await ownDraft(id, auth.session.profile.id);
   if ("error" in draft) return draft.error;
-  const { data: file } = await draft.db.from("submission_files")
+  // Ownership was checked above; the original's storage path is server-only, so read the row with the service role
+  const admin = getAdminClient();
+  const { data: file } = await admin.from("submission_files")
     .select("id, submission_id, storage_path, preview_path, thumbnail_path, frame_paths").eq("id", fileId).eq("submission_id", id).maybeSingle();
   if (!file) return NextResponse.json({ error: "File not found." }, { status: 404 });
-  await removeSubmissionFile(getAdminClient(), file, auth.session.profile.id);
+  await removeSubmissionFile(admin, file, auth.session.profile.id);
   return NextResponse.json({ ok: true });
 }

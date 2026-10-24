@@ -42,7 +42,7 @@ export default function CreativeReviewPage() {
         <Link href="/campaigns" className="mb-2 inline-flex items-center gap-1 text-sm text-ink-2 hover:text-ink"><ArrowLeft className="size-4" /> Campaigns</Link>
         <p className="eyebrow">Creative Review</p>
         <h1 className="display text-3xl sm:text-4xl">Review submitted work</h1>
-        <p className="mt-1 text-sm text-ink-2">Watermarked previews only — originals unlock after you approve and fund escrow.</p>
+        <p className="mt-1 text-sm text-ink-2">Watermarked previews only — clean files unlock after you approve the work and release the payment.</p>
       </div>
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[22rem_minmax(0,1fr)]">
         <aside className={cn("glass h-fit min-w-0 rounded-[1.75rem] p-3 lg:sticky lg:top-24", selected && "hidden lg:block")}>

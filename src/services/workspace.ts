@@ -194,8 +194,8 @@ export const certificatePdfUrl = (code: string) => `/api/certificates/${code}`;
 export const receiptPdfUrl = (projectId: string) => `/api/projects/${projectId}/receipt`;
 
 // ---------------------------------------------------------------------------
-// Signed media URLs (storage RLS decides: previews for parties; originals for the creator, and for the brand
-// only after approval + funded escrow)
+// Signed media URLs: watermarked previews via storage RLS (the parties); clean originals only through the server
+// route (the creator; the brand once the version is approved AND the payment is released)
 // ---------------------------------------------------------------------------
 export async function signPreviews(db: DB, paths: string[], expiresIn = 600): Promise<Record<string, string>> {
   const unique = [...new Set(paths.filter(Boolean))];
@@ -205,10 +205,12 @@ export async function signPreviews(db: DB, paths: string[], expiresIn = 600): Pr
   return Object.fromEntries((data ?? []).flatMap((d) => (d.signedUrl && d.path ? [[d.path, d.signedUrl] as const] : [])));
 }
 
-export async function signOriginal(db: DB, path: string, downloadName?: string): Promise<string> {
-  const { data, error } = await db.storage.from(BUCKET_ORIGINALS).createSignedUrl(path, 120, downloadName ? { download: downloadName } : undefined);
-  if (error || !data) throw new ServiceError("Originals unlock once the work is approved and escrow is funded.");
-  return data.signedUrl;
+/** A 60-second download URL for a clean original; the server refuses (403) until the payment is released. */
+export async function getOriginalUrl(submissionId: string, fileId: string): Promise<string> {
+  const res = await fetch(`/api/submissions/${submissionId}/files/${fileId}/original`, { cache: "no-store" });
+  const json = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
+  if (!res.ok || !json.url) throw new ServiceError(json.error ?? "Clean files unlock after the payment is released.");
+  return json.url;
 }
 
 // ---------------------------------------------------------------------------

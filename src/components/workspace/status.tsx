@@ -18,8 +18,8 @@ export const PROJECT_STATUS: Record<ProjectStatus, { label: string; tone: Tone; 
   submitted: { label: "In review", tone: "solid", icon: <FileCheck2 />, creator: "Submitted — the brand is reviewing.", brand: "Waiting for your review." },
   revision_requested: { label: "Revision requested", tone: "danger", icon: <RotateCcw />, creator: "The brand asked for changes — see the feedback and resubmit.", brand: "Waiting for the creator's revision." },
   resubmitted: { label: "Revision in review", tone: "solid", icon: <FileCheck2 />, creator: "Revised version submitted — the brand is reviewing.", brand: "A revised version is waiting for your review." },
-  approved: { label: "Approved", tone: "success", icon: <BadgeCheck />, creator: "Approved! Waiting for the brand to release payment.", brand: "Approved — release payment to complete." },
-  completed: { label: "Completed", tone: "dark", icon: <CheckCircle2 />, creator: "Complete and paid.", brand: "Complete — licence record issued." },
+  approved: { label: "Approved", tone: "success", icon: <BadgeCheck />, creator: "Approved! Waiting for the brand to release payment — your clean files stay locked until then.", brand: "Approved — release the payment to unlock the clean files and the licence record." },
+  completed: { label: "Completed", tone: "dark", icon: <CheckCircle2 />, creator: "Complete and paid.", brand: "Complete — clean files unlocked and licence record issued." },
   rejected: { label: "Rejected", tone: "danger", icon: <XCircle />, creator: "The brand rejected this work.", brand: "You rejected this work." },
   cancelled: { label: "Cancelled", tone: "neutral", icon: <Ban />, creator: "This project was cancelled.", brand: "Cancelled." },
 };

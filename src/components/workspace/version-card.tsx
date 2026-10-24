@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Download, MessageSquare, Send, Wrench } from "lucide-react";
+import { Download, Lock, MessageSquare, Send, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import type { Submission } from "@/types/workspace";
 import { useDb, useMe } from "@/features/session";
-import { addSubmissionComment, signOriginal } from "@/services/workspace";
+import { addSubmissionComment, getOriginalUrl } from "@/services/workspace";
 import { commentInputSchema } from "@/lib/validation/workspace";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -79,7 +79,6 @@ export function CommentThread({ submission, currentMs, onAdded, fileId }: {
 
 /** One version of the work, collapsed by default (latest open). */
 export function VersionCard({ s, defaultOpen, onChanged, canDownloadOriginals }: { s: Submission; defaultOpen?: boolean; onChanged: () => void; canDownloadOriginals?: boolean }) {
-  const db = useDb();
   const me = useMe();
   const isCreator = s.creator_id === me.id;
   const urls = useSignedPreviews(s.files.flatMap(previewPaths));
@@ -115,12 +114,14 @@ export function VersionCard({ s, defaultOpen, onChanged, canDownloadOriginals }:
                 ))}
               </div>
             )}
-            {(isCreator || canDownloadOriginals) && file.storage_path && (
+            {file.kind === "upload" && (isCreator || canDownloadOriginals ? (
               <Button size="sm" variant="ghost" onClick={async () => {
-                try { window.location.href = await signOriginal(db, file.storage_path!, file.file_name ?? undefined); }
+                try { window.location.href = await getOriginalUrl(s.id, file.id); }
                 catch (e) { toast.error(errorMessage(e)); }
               }}><Download /> {isCreator ? "Download my original" : "Download clean original"}</Button>
-            )}
+            ) : (
+              <Button size="sm" variant="ghost" disabled title="Clean files unlock after the payment is released"><Lock /> Unlocks after payment is released</Button>
+            ))}
           </>
         )}
         {(s.notes || s.tools_used.length > 0 || s.workflow_notes) && (

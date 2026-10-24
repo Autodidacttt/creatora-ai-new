@@ -145,7 +145,7 @@ export function ProjectView({ id }: { id: string }) {
             <div className="space-y-3">
               <h2 className="display text-lg">Versions</h2>
               {submitted.map((s, i) => <VersionCard key={s.id} s={s} defaultOpen={i === 0} onChanged={refresh}
-                canDownloadOriginals={!isCreator && s.status === "approved" && ["funded", "released"].includes(p.escrow?.status ?? "")} />)}
+                canDownloadOriginals={!isCreator && s.status === "approved" && p.escrow?.status === "released"} />)}
             </div>
           ) : !canSubmit ? (
             <EmptyState icon={<ClipboardList />} title="No work submitted yet" description={isCreator ? undefined : "You'll be notified when the creator submits the first version."} />

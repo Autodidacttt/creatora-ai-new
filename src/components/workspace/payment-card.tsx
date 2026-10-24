@@ -152,7 +152,7 @@ export function PaymentCard({ project, payments, role, onChanged, onSetAmount, f
         )}
       </div>
       {role === "brand" && e?.status === "funded" && s !== "approved" && !["rejected", "cancelled"].includes(s) && (
-        <p className="text-xs text-ink-3">Funds are held. Approve the final version to release them.</p>
+        <p className="text-xs text-ink-3">Funds are held. Approve the final version, then release them to unlock the clean files and the licence record.</p>
       )}
       {e?.status === "disputed" && <p className="text-xs text-danger">This payment is disputed. The Creatora team resolves disputes; funds stay held until then.</p>}
 
