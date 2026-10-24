@@ -432,9 +432,9 @@ export type Database = {
         Relationships: [];
       };
       verifications: {
-        Row: { id: string; creator_id: string; type: string; tool_id: number | null; post_id: string | null; experience_id: string | null; title: string; evidence_url: string | null; evidence_notes: string | null; status: string; reviewed_by: string | null; reviewed_at: string | null; review_notes: string | null; created_at: string };
-        Insert: { id?: string; creator_id: string; type: string; tool_id?: number | null; post_id?: string | null; experience_id?: string | null; title: string; evidence_url?: string | null; evidence_notes?: string | null; status?: string; reviewed_by?: string | null; reviewed_at?: string | null; review_notes?: string | null; created_at?: string };
-        Update: { id?: string; creator_id?: string; type?: string; tool_id?: number | null; post_id?: string | null; experience_id?: string | null; title?: string; evidence_url?: string | null; evidence_notes?: string | null; status?: string; reviewed_by?: string | null; reviewed_at?: string | null; review_notes?: string | null; created_at?: string };
+        Row: { id: string; creator_id: string; type: string; experience_id: string | null; title: string; evidence_url: string | null; evidence_notes: string | null; status: string; reviewed_by: string | null; reviewed_at: string | null; review_notes: string | null; created_at: string };
+        Insert: { id?: string; creator_id: string; type: string; experience_id?: string | null; title: string; evidence_url?: string | null; evidence_notes?: string | null; status?: string; reviewed_by?: string | null; reviewed_at?: string | null; review_notes?: string | null; created_at?: string };
+        Update: { id?: string; creator_id?: string; type?: string; experience_id?: string | null; title?: string; evidence_url?: string | null; evidence_notes?: string | null; status?: string; reviewed_by?: string | null; reviewed_at?: string | null; review_notes?: string | null; created_at?: string };
         Relationships: [];
       };
       verified_phones: {

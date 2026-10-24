@@ -15,7 +15,7 @@ All data comes from Supabase and every action persists. New accounts start compl
 
 ### 2026-10-24: Account verification overhaul (phone OTP, ID, company verification, brand types)
 
-Migration `0026_identity_company_verification.sql` (expand step, safe with the previous app). Rollback: `supabase/rollback/0026_down.sql`, captured from production. A contract migration that deletes the old tool / workflow verification rows is prepared separately and only applied after approval.
+Migration `0026_identity_company_verification.sql` (expand step, safe with the previous app). Rollback: `supabase/rollback/0026_down.sql`, captured from production. Contract step `0027_drop_tool_workflow_verification.sql` (applied once nothing read them) deletes the old tool / workflow verification rows and drops `verifications.tool_id` / `post_id`. The rows are kept in `private.verifications_retired_0027`, which clients can't read. Rollback: `supabase/rollback/0027_down.sql`.
 
 - **Removed: AI Tool and Workflow verification.** Badges, the request UI, admin queue items, ranking input ("Verified on…"), seed data and the request type are all gone. New requests are refused in the database. Kept: past-work verification and Creative Review's AI checks.
 - **Phone OTP** (creators and brands): `POST /api/verification/phone/start` and `/check`.
@@ -226,7 +226,7 @@ Copy `.env.example` to `.env.local` and fill it in. Never commit `.env.local`.
 | `DEFAULT_PHONE_COUNTRY_CODE` | Phone OTP | Optional, default `+91` (for numbers typed without a country code) |
 | `EMAIL_SEND_MODE`, `RESEND_API_KEY`, `EMAIL_FROM` | Company invitations | Default `demo` (nothing sent; link shown to the admin). `live` + a Resend key sends real email |
 | `MOCK_IDENTITY_API_KEY` | Mock government-ID API | Optional (derived from the server secret if unset) |
-| `AI_CONTACT_DISCOVERY_ENABLED` | Admin "Find official contacts" | Default `false`. `true` sends company name / domain / industry / address to Gemini with search grounding |
+| `AI_CONTACT_DISCOVERY_ENABLED` | Admin "Find official contacts" | Default `false`. `true` sends company name / domain / industry / address to Gemini with search grounding. The Gemini key needs Google Search grounding quota (billed per search beyond the free monthly allowance); without it every search falls back to the demo directory |
 | `ID_RETENTION_DAYS` | ID image retention | Default `30` days after the decision |
 | `DEMO_ID_NOTICE` | ID form | Default `true`: shows the hackathon banner and the sample IDs |
 | `CRON_SECRET` | `/api/cron/purge-identity` | Optional scheduled purge (Vercel Cron) |

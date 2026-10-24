@@ -1,25 +1,49 @@
--- 0027 (CONTRACT for 0026) — NOT applied automatically. Move it into supabase/migrations/ only after approval,
--- once the app built for 0026 is live. DESTRUCTIVE: deletes the retired tool / workflow verification rows (kept in
--- private.verifications_retired_0027 as a backup) and drops their columns.
+-- Rollback of 0027_drop_tool_workflow_verification.sql, captured read-only from production at 0026_identity_company_verification.sql
+-- (2026-10-24T09:29:35.975Z). Re-adds verifications.tool_id / post_id (at the end of the column list), restores the
+-- tool / workflow rows from private.verifications_retired_0027 and the functions / constraints as they were at 0026.
+-- Usage: psql "$SUPABASE_DB_URL" -1 -v ON_ERROR_STOP=1 -f supabase/rollback/0027_down.sql
+set local check_function_bodies = off;
+set local lock_timeout = '5s';
 
--- Backup first (stays in the private schema; drop it later when no longer needed)
-create table private.verifications_retired_0027 as
-  select * from public.verifications where type in ('tool', 'workflow');
+alter table public.verifications add column tool_id integer, add column post_id uuid;
+alter table public.verifications add constraint verifications_tool_id_fkey FOREIGN KEY (tool_id) REFERENCES ai_tools(id) ON DELETE CASCADE;
+alter table public.verifications add constraint verifications_post_id_fkey FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE;
+alter table public.verifications add constraint verifications_check CHECK (((type <> 'tool'::text) OR (tool_id IS NOT NULL)));
+alter table public.verifications add constraint verifications_check1 CHECK (((type <> 'workflow'::text) OR (post_id IS NOT NULL)));
 
-delete from public.verifications where type in ('tool', 'workflow');
+-- Restore the rows as they were (no triggers: no new notifications, no review / ownership re-checks)
+alter table public.verifications drop constraint verifications_type_check;
+alter table public.verifications disable trigger user;
+insert into public.verifications (id, creator_id, type, tool_id, post_id, experience_id, title, evidence_url, evidence_notes,
+    status, reviewed_by, reviewed_at, review_notes, created_at)
+  select id, creator_id, type, tool_id, post_id, experience_id, title, evidence_url, evidence_notes,
+    status, reviewed_by, reviewed_at, review_notes, created_at
+  from private.verifications_retired_0027;
+alter table public.verifications enable trigger user;
+alter table public.verifications add constraint verifications_type_check CHECK ((type = ANY (ARRAY['past_work'::text, 'identity'::text]))) NOT VALID;
 
--- Only past work is validated now (identity rows are legacy manual requests)
-create or replace function public.tg_verifications_guard()
-returns trigger language plpgsql security definer set search_path = public as $$
+CREATE OR REPLACE FUNCTION public.tg_verifications_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
 begin
+  if new.type = 'tool' and not exists (
+      select 1 from public.creator_tools where creator_id = new.creator_id and tool_id = new.tool_id) then
+    raise exception 'Tool verification must reference a tool in the creator''s stack';
+  end if;
+  if new.type = 'workflow' and not exists (
+      select 1 from public.posts where id = new.post_id and creator_id = new.creator_id) then
+    raise exception 'Workflow verification must reference one of the creator''s own posts';
+  end if;
   if new.type = 'past_work' and not exists (
       select 1 from public.creator_experiences where id = new.experience_id and creator_id = new.creator_id) then
     raise exception 'Past work verification must reference the creator''s own experience entry';
   end if;
   return new;
-end $$;
+end $function$;
 
--- get_profile no longer returns the retired columns
 CREATE OR REPLACE FUNCTION public.get_profile(p_username text)
  RETURNS jsonb
  LANGUAGE sql
@@ -79,7 +103,7 @@ AS $function$
     'verifications', coalesce((
       select jsonb_agg(jsonb_build_object('id', v.id, 'type', v.type, 'title', v.title,
                'status', v.status, 'evidence_url', v.evidence_url, 'evidence_notes', v.evidence_notes,
-               'experience_id', v.experience_id,
+               'tool_id', v.tool_id, 'post_id', v.post_id, 'experience_id', v.experience_id,
                'reviewed_at', v.reviewed_at, 'created_at', v.created_at)
              order by v.created_at desc)
       from public.verifications v where v.creator_id = p.id and v.type = 'past_work'), '[]'::jsonb),
@@ -93,6 +117,5 @@ AS $function$
   where p.username = p_username::extensions.citext;
 $function$;
 
--- Columns only tool / workflow verification used (their check constraints and foreign keys go with them)
-alter table public.verifications drop column tool_id, drop column post_id;
-alter table public.verifications validate constraint verifications_type_check;
+drop table private.verifications_retired_0027;
+delete from private.schema_migrations where name = '0027_drop_tool_workflow_verification.sql';

@@ -237,8 +237,10 @@ async function main() {
       && (await status(company2)).company?.status === "pending");
 
     console.log("\n▸ Old tool / workflow verification is gone");
-    const tool = (await admin.from("ai_tools").select("id").limit(1).single()).data!.id;
-    check("can't request a tool verification any more", !!(await creator.c.from("verifications").insert({ creator_id: creator.id, type: "tool", tool_id: tool, title: "Old tool verification" })).error);
+    check("can't request a tool verification any more", !!(await creator.c.from("verifications").insert({ creator_id: creator.id, type: "tool", title: "Old tool verification" })).error);
+    check("…nor a workflow verification", !!(await creator.c.from("verifications").insert({ creator_id: creator.id, type: "workflow", title: "Old workflow verification" })).error);
+    check("no tool / workflow rows or columns left (0027)", (await admin.from("verifications").select("id", { count: "exact", head: true }).in("type", ["tool", "workflow"])).count === 0
+      && !!(await admin.from("verifications").select("tool_id" as "id").limit(1)).error);
     const anyCard = ((await creator2.c.rpc("search_creators", { p_limit: 30 } as never)).data ?? []) as { creator: { tools: { verified?: boolean }[] } }[];
     check("no tool shows as verified on cards", anyCard.every((c) => c.creator.tools.every((t) => !t.verified)));
 
