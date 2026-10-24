@@ -65,9 +65,9 @@ export default function ProfilePage() {
             <ExperienceList profile={p} />
           </aside>
         </div>
-      ) : (
+      ) : p.role === "brand" ? (
         <BrandSection brandId={p.id} isMe={p.is_me} description={p.brand?.description ?? null} viewerRole={me.role} />
-      )}
+      ) : null /* admin profiles have no briefs (only brands create them) */}
     </div>
   );
 }

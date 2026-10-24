@@ -19,7 +19,8 @@ function rateLimited(userId: string) {
 }
 
 export async function POST(request: Request) {
-  const auth = await apiSession(["brand", "admin"]);
+  // Only brands create briefs (admins moderate them in /admin)
+  const auth = await apiSession(["brand"]);
   if ("error" in auth) return auth.error;
 
   const parsed = briefPromptSchema.safeParse(await request.json().catch(() => null));

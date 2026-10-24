@@ -44,10 +44,12 @@ export default function CampaignsPage() {
           <p className="eyebrow">Campaigns</p>
           <h1 className="display text-3xl sm:text-4xl">{me.role === "brand" ? "Brand dashboard" : "Your briefs"}</h1>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Link href="/campaigns/new" className={buttonVariants({ variant: "ghost", size: "sm" })}>Quick brief form</Link>
-          <PillCTA href="/brand/campaigns/studio">Create campaign</PillCTA>
-        </div>
+        {me.role === "brand" && (
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href="/campaigns/new" className={buttonVariants({ variant: "ghost", size: "sm" })}>Quick brief form</Link>
+            <PillCTA href="/brand/campaigns/studio">Create campaign</PillCTA>
+          </div>
+        )}
       </div>
 
       {me.role === "brand" && <BrandDashboard />}
@@ -68,8 +70,9 @@ export default function CampaignsPage() {
       {list.isError && <ErrorState error={list.error} onRetry={() => list.refetch()} />}
       {list.data?.items.length === 0 && (
         <EmptyState icon={<Megaphone />} title={tab === "all" ? "No briefs yet" : `No ${tab} briefs`}
-          description="Describe your idea in one sentence and the AI brief builder will structure it — formats, tools, rights and all."
-          action={<Link href="/brand/campaigns/studio" className={buttonVariants({ variant: "primary" })}><Plus /> Create a campaign</Link>} />
+          description={me.role === "brand" ? "Describe your idea in one sentence and the AI brief builder will structure it — formats, tools, rights and all."
+            : "Only brands create briefs. Campaign moderation lives in the Admin area."}
+          action={me.role === "brand" && <Link href="/brand/campaigns/studio" className={buttonVariants({ variant: "primary" })}><Plus /> Create a campaign</Link>} />
       )}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {list.data?.items.map((c) => <CampaignCard key={c.id} campaign={c} showBrand={false} showStats footer={<CollaboratorsBar campaign={c} />} />)}
