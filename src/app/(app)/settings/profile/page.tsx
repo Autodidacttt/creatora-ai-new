@@ -10,6 +10,7 @@ import { GlassPanel } from "@/components/ui/glass";
 import { ErrorState, Skeleton } from "@/components/ui/states";
 import { SegmentedTabs } from "@/components/ui/tabs";
 import { BasicsForm } from "@/components/profile/basics-form";
+import { AppearanceSettings } from "@/components/astral/appearance-settings";
 import { BrandDetailsForm, CreatorAttributesForm, CreatorDetailsForm, ExperienceManager } from "@/components/profile/creator-forms";
 
 type Tab = "profile" | "skills" | "details" | "experience" | "company";
@@ -54,6 +55,7 @@ export default function EditProfilePage() {
           </div>
         )}
       </GlassPanel>
+      <AppearanceSettings />
     </div>
   );
 }

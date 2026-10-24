@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useTheme } from "next-themes";
-import { Bookmark, LogOut, Moon, Search, Settings, ShieldCheck, Sun, User, LayoutDashboard } from "lucide-react";
+import { Bookmark, LogOut, Moon, Search, Settings, ShieldCheck, Sparkles, Sun, User, LayoutDashboard } from "lucide-react";
 import { useDb, useMe } from "@/features/session";
 import { Avatar } from "@/components/ui/avatar";
 import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/components/ui/overlay";
@@ -100,6 +100,7 @@ export function TopBar({ unreadNotifications }: { unreadNotifications: number })
             <MenuItem onSelect={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}>
               {resolvedTheme === "dark" ? <Sun /> : <Moon />} {resolvedTheme === "dark" ? "Light mode" : "Dark mode"}
             </MenuItem>
+            <MenuItem onSelect={() => router.push("/settings/profile#appearance")}><Sparkles /> Appearance &amp; effects</MenuItem>
             <MenuSeparator />
             <MenuItem onSelect={signOut} danger><LogOut /> Sign out</MenuItem>
           </MenuContent>
