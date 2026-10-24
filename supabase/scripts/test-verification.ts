@@ -251,10 +251,13 @@ async function main() {
     check("client can't set its own badge", !!(await creator2.c.from("profiles").update({ identity_verified_at: new Date().toISOString() } as never).eq("id", creator2.id)).error
       || !(await admin.from("profiles").select("identity_verified_at").eq("id", creator2.id).single()).data?.identity_verified_at);
   } finally {
-    // Clean up: ID images, impersonation reports, then the accounts (rows cascade)
-    const imgs = (await admin.from("identity_verifications").select("id_image_path").in("user_id", created)).data ?? [];
+    // Clean up: ID images, verifier notifications, impersonation reports, then the accounts (rows cascade)
+    const imgs = (await admin.from("identity_verifications").select("id, id_image_path").in("user_id", created)).data ?? [];
     const paths = imgs.map((i) => i.id_image_path).filter((p): p is string => !!p);
     if (paths.length) await admin.storage.from("identity-documents").remove(paths);
+    const companies = (await admin.from("company_verifications").select("id").in("brand_id", created)).data ?? [];
+    const entities = [...imgs, ...companies].map((v) => v.id);
+    if (entities.length) await admin.from("notifications").delete().eq("type", "verification").in("entity_id", entities);
     if (created.length) await admin.from("reports").delete().in("target_id", created);
     for (const id of created) await admin.auth.admin.deleteUser(id);
     console.log("\n  (cleaned up the throwaway accounts, their ID images, verification rows and reports)");
